@@ -32,14 +32,14 @@ nav logOut route currentUser = nav_ ~~
   { navbar: nut
       ( D.ul (pure $ D.Class := "nav navbar-nav pull-xs-right")
           [ navItem Home "/#/" "Home" (pure true)
-          , navItem Editor "/#/editor" "Editor" (isJust <$> currentUser)
-          , navItem Settings "/#/settings" "Settings" (isJust <$> currentUser)
-          , navItem LogIn "/#/login" "Sign in" (isNothing <$> currentUser)
-          , navItem Register "/#/register" "Sign up" (isNothing <$> currentUser)
+          , navItem Editor "/#/editor" "Editor" isSignedIn
+          , navItem Settings "/#/settings" "Settings" isSignedIn
+          , navItem LogIn "/#/login" "Sign in" isLoggedOut
+          , navItem Register "/#/register" "Sign up" isLoggedOut
           , D.li
               ( oneOf
                   [ pure $ D.Class := "nav-item"
-                  , doDisplay (isJust <$> currentUser)
+                  , doDisplay isSignedIn
                   ]
               )
               [ D.a
@@ -55,6 +55,12 @@ nav logOut route currentUser = nav_ ~~
       )
   }
   where
+
+  isSignedIn :: AnEvent m Boolean
+  isSignedIn = isJust <$> currentUser
+
+  isLoggedOut :: AnEvent m Boolean
+  isLoggedOut = isNothing <$> currentUser
 
   doDisplay :: AnEvent m Boolean -> AnEvent m (Attribute D.Li_)
   doDisplay displayCondition = dedup displayCondition <#> ((if _ then "" else "display: none;") >>> (D.Style := _))
