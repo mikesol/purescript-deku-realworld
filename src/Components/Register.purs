@@ -4,7 +4,7 @@ import Prelude
 
 import API.Effects as Effects
 import API.Types (User)
-import Components.Common (fieldset)
+import Components.Common (passwordField, textField)
 import Control.Alt ((<|>))
 import Control.Monad.Except (Except, runExcept, throwError)
 import Data.Array (intercalate)
@@ -18,7 +18,7 @@ import Deku.Core (class Korok, Domable)
 import Deku.DOM as D
 import Deku.Do (useState)
 import Deku.Do as Deku
-import Deku.Listeners (click, textInput)
+import Deku.Listeners (click)
 import Deku.Pursx (nut, (~~))
 import Effect (Effect)
 import Effect.Aff (launchAff_)
@@ -65,9 +65,9 @@ register setCurrentUser = register_ ~~
                       (map (D.li_ <<< pure <<< text_) errs)
                 ]
             , D.div_
-                [ fieldset false "Your Name" (Just >>> setName)
-                , fieldset false "Email" (Just >>> setEmail)
-                , fieldset true "Password" (Just >>> setPassword)
+                [ textField "Your Name" (Just >>> setName)
+                , textField "Email" (Just >>> setEmail)
+                , passwordField "Password" (Just >>> setPassword)
                 , D.button
                     ( oneOf
                         [ pure $ D.Class := "btn btn-lg btn-primary pull-xs-right"

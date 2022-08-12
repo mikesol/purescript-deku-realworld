@@ -4,13 +4,13 @@ import Prelude
 
 import API.Effects as Effects
 import API.Types (User)
-import Components.Common (fieldset)
+import Components.Common (passwordField, textFieldWithValue)
 import Control.Alt ((<|>))
-import Control.Monad.Except (Except, throwError)
 import Data.Array (intercalate)
+import Data.Compactable (compact)
 import Data.Either (Either(..))
 import Data.Foldable (oneOf)
-import Data.Maybe (Maybe(..), maybe)
+import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
 import Deku.Attribute ((:=))
 import Deku.Control (blank, switcher, text_)
@@ -58,6 +58,8 @@ settings currentUser setCurrentUser = settings_ ~~
           setEmail /\ email <- useState Nothing
           setPassword /\ password <- useState Nothing
           let errorMessages = ((email <|> password <|> pure Nothing) $> []) <|> errors
+          let onCurrentUser f = f <$> currentUser
+          let onCurrentUserM f = compact (f <$> currentUser)
           D.div_
             [ D.div_
                 [ errorMessages # switcher case _ of
@@ -66,11 +68,11 @@ settings currentUser setCurrentUser = settings_ ~~
                       (map (D.li_ <<< pure <<< text_) errs)
                 ]
             , D.div_
-                [ fieldset false "URL of profile picture" (Just >>> setProfilePictureUrl)
-                , fieldset false "Your Name" (Just >>> setName)
-                , fieldset false "Short bio about you" (Just >>> setBio)
-                , fieldset false "Email" (Just >>> setEmail)
-                , fieldset true "Password" (Just >>> setPassword)
+                [ textFieldWithValue (onCurrentUserM _.image) "URL of profile picture" (Just >>> setProfilePictureUrl)
+                , textFieldWithValue (onCurrentUser _.username) "Your Name" (Just >>> setName)
+                , textFieldWithValue (onCurrentUserM _.bio) "Short bio about you" (Just >>> setBio)
+                , textFieldWithValue (onCurrentUser _.email) "Email" (Just >>> setEmail)
+                , passwordField "Password" (Just >>> setPassword)
                 , D.button
                     ( oneOf
                         [ pure $ D.Class := "btn btn-lg btn-primary pull-xs-right"
