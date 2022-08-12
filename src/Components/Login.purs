@@ -48,12 +48,12 @@ login setCurrentUser = login_ ~~
   { formMatter: nut
       ( Deku.do
           let
-            fieldset :: String -> (String -> Effect Unit) -> Domable m lock payload
-            fieldset placeholder pusher = D.fieldset (oneOf [ pure $ D.Class := "form-group" ])
+            fieldset :: Boolean -> String -> (String -> Effect Unit) -> Domable m lock payload
+            fieldset isPw placeholder pusher = D.fieldset (oneOf [ pure $ D.Class := "form-group" ])
               [ D.input
                   ( oneOf
                       [ pure $ D.Class := "form-control form-control-lg"
-                      , pure $ D.Xtype := "text"
+                      , pure $ D.Xtype := if isPw then "password" else "text"
                       , pure $ D.Placeholder := placeholder
                       , textInput (pure pusher)
                       ]
@@ -72,8 +72,8 @@ login setCurrentUser = login_ ~~
                       (map (D.li_ <<< pure <<< text_) errs)
                 ]
             , D.div_
-                [ fieldset "Email" (Just >>> setEmail)
-                , fieldset "Password" (Just >>> setPassword)
+                [ fieldset false "Email" (Just >>> setEmail)
+                , fieldset true "Password" (Just >>> setPassword)
                 , D.button
                     ( oneOf
                         [ pure $ D.Class := "btn btn-lg btn-primary pull-xs-right"

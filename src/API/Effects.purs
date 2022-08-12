@@ -6,19 +6,25 @@ import API.Types (MultipleArticles, RegistrationRequest, RegistrationResponse, S
 import Affjax.RequestBody as RequestFormat
 import Affjax.RequestHeader (RequestHeader(..))
 import Affjax.ResponseFormat as ResponseFormat
-import Affjax.Web (Error, defaultRequest, get, printError, request)
+import Affjax.Web (defaultRequest, printError, request)
 import Data.Either (Either(..))
 import Data.HTTP.Method (Method(..))
 import Data.Maybe (Maybe(..))
 import Data.MediaType.Common (applicationJSON)
-import Data.Traversable (traverse)
 import Effect.Aff (Aff, error, throwError)
 import Foreign.Object (Object)
 import Simple.JSON as JSON
 
-simpleGet :: forall r. JSON.ReadForeign r => String -> Aff r
-simpleGet url = do
-  res <- get ResponseFormat.string url
+simpleGet' :: forall r. JSON.ReadForeign r => Array RequestHeader -> String -> Aff r
+simpleGet' headers url = do
+  res <- request
+    ( defaultRequest
+        { responseFormat = ResponseFormat.string
+        , method = Left GET
+        , url = url
+        , headers = headers
+        }
+    )
   case res of
     Left err -> do
       throwError $ error $ "GET /api response failed to decode: " <> printError err
@@ -27,6 +33,9 @@ simpleGet url = do
         Right (r :: r) -> pure r
         Left e -> do
           throwError $ error $ "Can't parse JSON. " <> show e
+
+simpleGet :: forall r. JSON.ReadForeign r => String -> Aff r
+simpleGet = simpleGet' []
 
 simplePost :: forall i o. JSON.WriteForeign i => JSON.ReadForeign o => String -> i -> Aff (PostReturn o)
 simplePost url payload = do
@@ -53,6 +62,15 @@ type PostReturn a = Either Errors a
 
 getArticles :: Aff MultipleArticles
 getArticles = simpleGet "https://api.realworld.io/api/articles"
+
+getArticleFeed :: String -> Aff MultipleArticles
+getArticleFeed token = simpleGet' [ RequestHeader "Authorization" ("Token " <> token)] "https://api.realworld.io/api/articles/feed"
+
+getArticlesWithTag :: String -> Aff MultipleArticles
+getArticlesWithTag tag = simpleGet $ "https://api.realworld.io/api/articles?tag=" <> tag
+
+getTags :: Aff { tags :: Array String }
+getTags = simpleGet "https://api.realworld.io/api/tags"
 
 getArticle :: String -> Aff SingleArticle
 getArticle slug = simpleGet ("https://api.realworld.io/api/articles/" <> slug)

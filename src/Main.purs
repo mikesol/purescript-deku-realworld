@@ -2,13 +2,13 @@ module Main where
 
 import Prelude
 
-import API.Effects (getArticle, getArticles)
+import API.Effects (getArticle, getArticles, getTags)
 import Bolson.Control (switcher)
 import Bolson.Core (envy)
 import Components.Article (article)
 import Components.Create (create)
 import Components.Footer (footer)
-import Components.Home (ArticleLoadStatus(..), home)
+import Components.Home (ArticleLoadStatus(..), TagsLoadStatus(..), home)
 import Components.Login (login)
 import Components.Nav (nav)
 import Components.Profile (profile)
@@ -41,7 +41,7 @@ main = do
     [ nav (currentUser.push Nothing) (map snd routeEvent) currentUser.event
     , D.div_
         [ ( routeEvent # switcher case _ of
-              _ /\ Home -> home currentUser.event (ArticlesLoaded <$> affToEvent (getArticles))
+              _ /\ Home -> home currentUser.event (ArticlesLoaded <$> affToEvent getArticles) (TagsLoaded <$> affToEvent getTags)
               _ /\ Article s -> envy $ fromEvent $ (map article (affToEvent (getArticle s)))
               _ /\ Settings -> settings
               _ /\ Editor -> create
