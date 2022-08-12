@@ -15,7 +15,7 @@ import Effect (Effect)
 
 
 data Page = Home | Login | Profile | Settings | Footer | Create | Nav | Article
-page = Profile :: Page
+page = Home :: Page
 
 main :: Effect Unit
 main = runInBody case page of
