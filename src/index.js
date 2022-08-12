@@ -1,3 +1,4 @@
+import "./style.css"
 var main = require("../output/Main/index.js");
 if( window.location.href.indexOf('#') === -1) {
   window.location.replace(

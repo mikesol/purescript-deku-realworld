@@ -2,7 +2,8 @@ module Components.Home where
 
 import Prelude
 
-import API.Types (Article, MultipleArticles)
+import API.Types (Article, MultipleArticles, User)
+import Data.Maybe (Maybe)
 import Date (prettyDate)
 import Deku.Attribute ((:=))
 import Deku.Control (blank, switcher, text_)
@@ -105,8 +106,8 @@ home_ =
 </div>
 """
 
-home  :: forall s m lock payload. Korok s m => Event ArticleLoadStatus -> Domable m lock payload
-home articleLoadStatus = home_ ~~
+home  :: forall s m lock payload. Korok s m => Event (Maybe User) -> Event ArticleLoadStatus -> Domable m lock payload
+home userEvent articleLoadStatus = home_ ~~
   { articlePreviews: nut (
     fromEvent articleLoadStatus # switcher case _ of
       ArticlesLoading -> blank
