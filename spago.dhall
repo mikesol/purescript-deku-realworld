@@ -25,6 +25,7 @@
   , "transformers"
   , "tuples"
   , "web-html"
+  , "web-storage"
   ]
 , packages = ./packages.dhall
 }
