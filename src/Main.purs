@@ -15,6 +15,7 @@ import Components.Profile (profile)
 import Components.Register (register)
 import Components.Settings (settings)
 import Control.Alt ((<|>))
+import Data.Compactable (compact)
 import Data.Maybe (Maybe(..))
 import Data.Tuple (curry, snd)
 import Data.Tuple.Nested ((/\))
@@ -27,26 +28,38 @@ import FRP.Event as Event
 import Route (route, Route(..))
 import Routing.Duplex (parse)
 import Routing.Hash (matchesWith)
+import Simple.JSON as JSON
+import Web.HTML (window)
+import Web.HTML.Window (localStorage)
+import Web.Storage.Storage (getItem, removeItem, setItem)
 
 -- data Page = Home | Login | Profile | Settings | Footer | Create | Nav | Article
 
 main :: Effect Unit
 main = do
+  maybeUser <- (map JSON.readJSON_ >>> join) <$> (window >>= localStorage >>= getItem "session")
   routeEvent <- Event.create >>= \{ event, push } ->
     matchesWith (parse route) (curry push)
       *> map _.event (burning (Nothing /\ Home) event)
   currentUser <- Event.create >>= \{ event, push } -> do
-    burning Nothing event <#> _.event >>> { push, event: _ }
+    burning maybeUser event <#> _.event >>> { push, event: _ }
+  let
+    logOut = do
+      window >>= localStorage >>= removeItem "session"
+      currentUser.push Nothing
+    logIn cu = do
+      window >>= localStorage >>= setItem "session" (JSON.writeJSON cu)
+      currentUser.push (Just cu)
   runInBodyA
-    [ nav (currentUser.push Nothing) (map snd routeEvent) currentUser.event
+    [ nav logOut (map snd routeEvent) currentUser.event
     , D.div_
         [ ( routeEvent # switcher case _ of
               _ /\ Home -> home currentUser.event (pure ArticlesLoading <|> (ArticlesLoaded <$> affToEvent getArticles)) (TagsLoaded <$> affToEvent getTags)
               _ /\ Article s -> envy $ fromEvent $ (map article (affToEvent (getArticle s)))
-              _ /\ Settings -> settings
+              _ /\ Settings -> settings (compact currentUser.event) (Just >>> currentUser.push)
               _ /\ Editor -> create
-              _ /\ LogIn -> login (Just >>> currentUser.push)
-              _ /\ Register -> register (Just >>> currentUser.push)
+              _ /\ LogIn -> login logIn
+              _ /\ Register -> register logIn
               _ /\ Profile -> profile
           )
         ]

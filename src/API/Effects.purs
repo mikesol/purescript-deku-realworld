@@ -2,7 +2,7 @@ module API.Effects where
 
 import Prelude
 
-import API.Types (MultipleArticles, RegistrationRequest, RegistrationResponse, SignInRequest, SingleArticle, SignInResponse)
+import API.Types (MultipleArticles, RegistrationRequest, RegistrationResponse, SignInRequest, SignInResponse, SingleArticle, UpdateUserRequest)
 import Affjax.RequestBody as RequestFormat
 import Affjax.RequestHeader (RequestHeader(..))
 import Affjax.ResponseFormat as ResponseFormat
@@ -37,15 +37,15 @@ simpleGet' headers url = do
 simpleGet :: forall r. JSON.ReadForeign r => String -> Aff r
 simpleGet = simpleGet' []
 
-simplePost :: forall i o. JSON.WriteForeign i => JSON.ReadForeign o => String -> i -> Aff (PostReturn o)
-simplePost url payload = do
+simplePostOrPut' :: forall i o. JSON.WriteForeign i => JSON.ReadForeign o => Method -> Array RequestHeader -> String -> i -> Aff (PostReturn o)
+simplePostOrPut' method headers url payload = do
   res <- request
     ( defaultRequest
         { content = Just (RequestFormat.string (JSON.writeJSON payload))
         , responseFormat = ResponseFormat.string
-        , method = Left POST
+        , method = Left method
         , url = url
-        , headers = [ ContentType applicationJSON ]
+        , headers = [ ContentType applicationJSON ] <> headers
         }
     )
   case res of
@@ -56,6 +56,15 @@ simplePost url payload = do
         Left e -> case JSON.readJSON r.body of
           Right (r :: Errors) -> pure (Left r)
           Left e -> throwError $ error $ "Can't parse JSON. " <> show e
+
+simplePost' :: forall i o. JSON.WriteForeign i => JSON.ReadForeign o => Array RequestHeader -> String -> i -> Aff (PostReturn o)
+simplePost' = simplePostOrPut' POST
+
+simplePut' :: forall i o. JSON.WriteForeign i => JSON.ReadForeign o => Array RequestHeader -> String -> i -> Aff (PostReturn o)
+simplePut' = simplePostOrPut' PUT
+
+simplePost :: forall i o. JSON.WriteForeign i => JSON.ReadForeign o => String -> i -> Aff (PostReturn o)
+simplePost = simplePost' []
 
 type Errors = { errors :: Object (Array String) }
 type PostReturn a = Either Errors a
@@ -80,3 +89,6 @@ register payload = simplePost "https://api.realworld.io/api/users" payload
 
 logIn :: SignInRequest -> Aff (PostReturn SignInResponse)
 logIn payload = simplePost "https://api.realworld.io/api/users/login" payload
+
+updateUser :: String -> UpdateUserRequest -> Aff (PostReturn SignInResponse)
+updateUser token payload = simplePut' [ RequestHeader "Authorization" ("Token " <> token)] "https://api.realworld.io/api/user" payload

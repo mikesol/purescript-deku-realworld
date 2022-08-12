@@ -39,11 +39,13 @@ type RegistrationRequest = { user :: { email :: String, password :: String, user
 type RegistrationResponse = { user :: User }
 
 type UpdateUserRequest =
-  { email :: Maybe String
-  , password :: Maybe String
-  , username :: Maybe String
-  , bio :: Maybe String
-  , image :: Maybe String
+  { user ::
+      { email :: Maybe String
+      , password :: Maybe String
+      , username :: Maybe String
+      , bio :: Maybe String
+      , image :: Maybe String
+      }
   }
 
 type UpdateUserResponse = { user :: User }
