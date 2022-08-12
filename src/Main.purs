@@ -48,7 +48,7 @@ main = do
     logOut = do
       window >>= localStorage >>= removeItem "session"
       currentUser.push Nothing
-    logIn cu = do
+    setUser cu = do
       window >>= localStorage >>= setItem "session" (JSON.writeJSON cu)
       currentUser.push (Just cu)
   runInBodyA
@@ -57,10 +57,10 @@ main = do
         [ ( routeEvent # switcher case _ of
               _ /\ Home -> home currentUser.event (pure ArticlesLoading <|> (ArticlesLoaded <$> affToEvent getArticles)) (TagsLoaded <$> affToEvent getTags)
               _ /\ Article s -> envy $ fromEvent $ (map article (affToEvent (getArticle s)))
-              _ /\ Settings -> settings (fireAndForget (compact currentUser.event)) (Just >>> currentUser.push)
+              _ /\ Settings -> settings (fireAndForget (compact currentUser.event)) setUser
               _ /\ Editor -> create
-              _ /\ LogIn -> login logIn
-              _ /\ Register -> register logIn
+              _ /\ LogIn -> login setUser
+              _ /\ Register -> register setUser
               _ /\ Profile -> profile
           )
         ]
