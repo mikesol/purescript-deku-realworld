@@ -9,7 +9,7 @@ import Deku.Control (blank, switcher, text_)
 import Deku.Core (class Korok, Domable)
 import Deku.DOM as D
 import Deku.Pursx (nut, (~~))
-import FRP.Event (AnEvent, Event, fromEvent)
+import FRP.Event (Event, fromEvent)
 import Type.Proxy (Proxy(..))
 
 data ArticleLoadStatus = ArticlesLoading | ArticlesLoaded MultipleArticles
@@ -20,9 +20,11 @@ articlePreview
   , favoritesCount
   , title
   , description
+  , slug
   , author: { image, username }
   } = articlePreview_ ~~
   { image: pure (D.Src := image)
+  , href: pure (D.Href := "/#/article/" <> slug)
   , username: nut (text_ username)
   , title: nut (D.h1_ [text_ title])
   , description: nut (D.p_ [text_ description])
@@ -43,7 +45,7 @@ articlePreview_ =
                             <i class="ion-heart"></i> ~favoritesCount~
                         </button>
                     </div>
-                    <a href="" class="preview-link">
+                    <a ~href~ class="preview-link">
                         ~title~
                         ~description~
                         <span>Read more...</span>
@@ -108,23 +110,5 @@ home articleLoadStatus = home_ ~~
   { articlePreviews: nut (
     fromEvent articleLoadStatus # switcher case _ of
       ArticlesLoading -> blank
-      ArticlesLoaded articles -> D.div_ (map articlePreview articles.articles)  )
+      ArticlesLoaded articles -> D.div_ (map articlePreview articles.articles))
   }
-
-  {-{
-    "slug": "how-to-train-your-dragon",
-    "title": "How to train your dragon",
-    "description": "Ever wonder how?",
-    "body": "It takes a Jacobian",
-    "tagList": ["dragons", "training"],
-    "createdAt": "2016-02-18T03:22:56.637Z",
-    "updatedAt": "2016-02-18T03:48:35.824Z",
-    "favorited": false,
-    "favoritesCount": 0,
-    "author": {
-      "username": "jake",
-      "bio": "I work at statefarm",
-      "image": "https://i.stack.imgur.com/xHWG8.jpg",
-      "following": false
-    }
-  }-}

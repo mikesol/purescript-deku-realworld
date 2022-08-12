@@ -2,7 +2,7 @@ module API.Effects where
 
 import Prelude
 
-import API.Types (MultipleArticles)
+import API.Types (MultipleArticles, SingleArticle)
 import Affjax.ResponseFormat (string)
 import Affjax.Web (get, printError)
 import Data.Either (Either(..))
@@ -23,3 +23,6 @@ simpleGet url = do
 
 getArticles :: Aff MultipleArticles
 getArticles = simpleGet "https://api.realworld.io/api/articles"
+
+getArticle :: String -> Aff SingleArticle
+getArticle slug = simpleGet ("https://api.realworld.io/api/articles/" <> slug)

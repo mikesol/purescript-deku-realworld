@@ -1,8 +1,13 @@
 module Components.Article where
 
+import Prelude
 
-import Deku.Core (Nut)
-import Deku.Pursx ((~~))
+import API.Types (SingleArticle)
+import Deku.Attribute ((:=))
+import Deku.Control (text_)
+import Deku.Core (class Korok, Domable, Nut)
+import Deku.DOM as D
+import Deku.Pursx (nut, (~~))
 import Type.Proxy (Proxy(..))
 
 article_ =
@@ -11,24 +16,24 @@ article_ =
     <div class="banner">
         <div class="container">
 
-            <h1>How to build webapps that scale</h1>
+            ~title~
 
             <div class="article-meta">
-                <a href=""><img src="http://i.imgur.com/Qr71crq.jpg"/></a>
+                <a href=""><img ~image1~ /></a>
                 <div class="info">
-                    <a href="" class="author">Eric Simons</a>
+                    <a href="" class="author">~author1~</a>
                     <span class="date">January 20th</span>
                 </div>
                 <button class="btn btn-sm btn-outline-secondary">
                     <i class="ion-plus-round"></i>
                     &nbsp;
-                    Follow Eric Simons <span class="counter">(10)</span>
+                    Follow ~author2~
                 </button>
                 &nbsp;&nbsp;
                 <button class="btn btn-sm btn-outline-primary">
                     <i class="ion-heart"></i>
                     &nbsp;
-                    Favorite Post <span class="counter">(29)</span>
+                    Favorite Post <span class="counter">(~favoritesCount1~)</span>
                 </button>
             </div>
 
@@ -39,11 +44,9 @@ article_ =
 
         <div class="row article-content">
             <div class="col-md-12">
-                <p>
-                    Web development technologies have evolved at an incredible clip over the past few years.
-                </p>
-                <h2 id="introducing-ionic">Introducing RealWorld.</h2>
-                <p>It's a great solution for learning how other frameworks work.</p>
+                ~description~
+                ~articleHeader~
+                ~body~
             </div>
         </div>
 
@@ -51,22 +54,22 @@ article_ =
 
         <div class="article-actions">
             <div class="article-meta">
-                <a href="profile.html"><img src="http://i.imgur.com/Qr71crq.jpg"/></a>
+                <a href="profile.html"><img ~image3~ /></a>
                 <div class="info">
-                    <a href="" class="author">Eric Simons</a>
+                    <a href="" class="author">~author3~</a>
                     <span class="date">January 20th</span>
                 </div>
 
                 <button class="btn btn-sm btn-outline-secondary">
                     <i class="ion-plus-round"></i>
                     &nbsp;
-                    Follow Eric Simons
+                    Follow ~author4~
                 </button>
                 &nbsp;
                 <button class="btn btn-sm btn-outline-primary">
                     <i class="ion-heart"></i>
                     &nbsp;
-                    Favorite Post <span class="counter">(29)</span>
+                    Favorite Post <span class="counter">(~favoritesCount2~)</span>
                 </button>
             </div>
         </div>
@@ -80,7 +83,7 @@ article_ =
                         <textarea class="form-control" placeholder="Write a comment..." rows="3"></textarea>
                     </div>
                     <div class="card-footer">
-                        <img src="http://i.imgur.com/Qr71crq.jpg" class="comment-author-img"/>
+                        <img ~image4~ class="comment-author-img"/>
                         <button class="btn btn-sm btn-primary">
                             Post Comment
                         </button>
@@ -93,7 +96,7 @@ article_ =
                     </div>
                     <div class="card-footer">
                         <a href="" class="comment-author">
-                            <img src="http://i.imgur.com/Qr71crq.jpg" class="comment-author-img"/>
+                            <img ~image5~ class="comment-author-img"/>
                         </a>
                         &nbsp;
                         <a href="" class="comment-author">Jacob Schmidt</a>
@@ -107,7 +110,7 @@ article_ =
                     </div>
                     <div class="card-footer">
                         <a href="" class="comment-author">
-                            <img src="http://i.imgur.com/Qr71crq.jpg" class="comment-author-img"/>
+                            <img ~image2~ class="comment-author-img"/>
                         </a>
                         &nbsp;
                         <a href="" class="comment-author">Jacob Schmidt</a>
@@ -128,5 +131,36 @@ article_ =
 </div>
 """
 
-article :: Nut
-article = article_ ~~ {}
+article :: forall s m lock payload. Korok s m => SingleArticle -> Domable m lock payload
+article
+  { article:
+      { title
+      , favoritesCount
+      , description
+      , body
+      , author:
+        { username
+        , image
+        }
+      }
+  } = article_ ~~
+  { title: nut (D.h1_ [ text_ title ])
+  , image1: img
+  , image2: img
+  , image3: img
+  , image4: img
+  , image5: img
+  , body: nut (D.p_ [text_ body ])
+  , description: nut (D.p_ [text_ description ])
+  , author1: authorName
+  , author2: authorName
+  , author3: authorName
+  , author4: authorName
+  , articleHeader: nut (D.h2_ [text_ title])
+  , favoritesCount1: fCount
+  , favoritesCount2: fCount
+  }
+  where
+  img = pure (D.Src := image)
+  authorName = nut (text_ username)
+  fCount = nut (text_ (show favoritesCount))
