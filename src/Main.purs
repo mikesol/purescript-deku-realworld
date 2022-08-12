@@ -41,7 +41,7 @@ main = do
     [ nav (currentUser.push Nothing) (map snd routeEvent) currentUser.event
     , D.div_
         [ ( routeEvent # switcher case _ of
-              _ /\ Home -> home currentUser.event (ArticlesLoaded <$> affToEvent getArticles) (TagsLoaded <$> affToEvent getTags)
+              _ /\ Home -> home currentUser.event (pure ArticlesLoading <|> (ArticlesLoaded <$> affToEvent getArticles)) (TagsLoaded <$> affToEvent getTags)
               _ /\ Article s -> envy $ fromEvent $ (map article (affToEvent (getArticle s)))
               _ /\ Settings -> settings
               _ /\ Editor -> create

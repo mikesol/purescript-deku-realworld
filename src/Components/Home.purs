@@ -43,6 +43,14 @@ articlePreview
   , favoritesCount: nut (text_ (show favoritesCount))
   }
 
+articlesLoading_ =
+  Proxy    :: Proxy
+         """
+                <div class="article-preview">
+                        <h2>Loading...</h2>
+                </div>
+"""
+
 articlePreview_ =
   Proxy    :: Proxy
          """
@@ -118,7 +126,7 @@ home currentUser articleLoadStatus tagsLoadStatus = Deku.do
   home_ ~~
     { articlePreviews: nut
         ( (fromEvent articleLoadStatus <|> articles) # switcher case _ of
-            ArticlesLoading -> blank
+            ArticlesLoading -> loading
             ArticlesLoaded a -> D.div_ (map articlePreview a.articles)
         )
     , feedAttributes: oneOf
@@ -138,7 +146,7 @@ home currentUser articleLoadStatus tagsLoadStatus = Deku.do
             Just _ -> "cursor: pointer;"
         , click $ fromEvent currentUser <#> case _ of
             Nothing -> pure unit
-            Just cu -> launchAff_
+            Just cu -> setArticles ArticlesLoading *> launchAff_
               do
                 liftEffect $ setTab Feed
                 getArticleFeed cu.token >>= liftEffect <<< setArticles <<< ArticlesLoaded
@@ -148,7 +156,7 @@ home currentUser articleLoadStatus tagsLoadStatus = Deku.do
             Feed -> ""
             Global -> " active"
         , pure $ D.Style := "cursor: pointer;"
-        , click $ pure $ launchAff_
+        , click $ pure $ setArticles ArticlesLoading *> launchAff_
             do
               liftEffect $ setTab Global
               getArticles >>= liftEffect <<< setArticles <<< ArticlesLoaded
@@ -173,3 +181,6 @@ home currentUser articleLoadStatus tagsLoadStatus = Deku.do
               )
         )
     }
+  where
+  loading :: Domable m lock payload
+  loading = articlesLoading_ ~~ {}
