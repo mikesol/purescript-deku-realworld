@@ -4,6 +4,7 @@ import Prelude
 
 import API.Effects as Effects
 import API.Types (User)
+import Components.Common (fieldset)
 import Control.Alt ((<|>))
 import Control.Monad.Except (Except, runExcept, throwError)
 import Data.Array (intercalate)
@@ -51,19 +52,6 @@ register :: forall s m lock payload. Korok s m => (User -> Effect Unit) -> Domab
 register setCurrentUser = register_ ~~
   { formMatter: nut
       ( Deku.do
-          let
-            fieldset :: Boolean -> String -> (String -> Effect Unit) -> Domable m lock payload
-            fieldset isPw placeholder pusher = D.fieldset (oneOf [ pure $ D.Class := "form-group" ])
-              [ D.input
-                  ( oneOf
-                      [ pure $ D.Class := "form-control form-control-lg"
-                      , pure $ D.Xtype := if isPw then "password" else "text"
-                      , pure $ D.Placeholder := placeholder
-                      , textInput (pure pusher)
-                      ]
-                  )
-                  []
-              ]
           setErrors /\ errors <- useState []
           setName /\ name <- useState Nothing
           setEmail /\ email <- useState Nothing

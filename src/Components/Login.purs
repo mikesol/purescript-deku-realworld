@@ -4,6 +4,7 @@ import Prelude
 
 import API.Effects (logIn)
 import API.Types (User)
+import Components.Common (fieldset)
 import Control.Alt ((<|>))
 import Control.Monad.Except (Except, runExcept, throwError)
 import Data.Array (intercalate)
@@ -17,7 +18,7 @@ import Deku.Core (class Korok, Domable)
 import Deku.DOM as D
 import Deku.Do (useState)
 import Deku.Do as Deku
-import Deku.Listeners (click, textInput)
+import Deku.Listeners (click)
 import Deku.Pursx (nut, (~~))
 import Effect (Effect)
 import Effect.Aff (launchAff_)
@@ -47,19 +48,6 @@ login :: forall s m lock payload. Korok s m => (User -> Effect Unit) -> Domable 
 login setCurrentUser = login_ ~~
   { formMatter: nut
       ( Deku.do
-          let
-            fieldset :: Boolean -> String -> (String -> Effect Unit) -> Domable m lock payload
-            fieldset isPw placeholder pusher = D.fieldset (oneOf [ pure $ D.Class := "form-group" ])
-              [ D.input
-                  ( oneOf
-                      [ pure $ D.Class := "form-control form-control-lg"
-                      , pure $ D.Xtype := if isPw then "password" else "text"
-                      , pure $ D.Placeholder := placeholder
-                      , textInput (pure pusher)
-                      ]
-                  )
-                  []
-              ]
           setErrors /\ errors <- useState []
           setEmail /\ email <- useState Nothing
           setPassword /\ password <- useState Nothing
