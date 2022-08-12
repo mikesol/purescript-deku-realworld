@@ -1,11 +1,17 @@
 { sources = [ "./src/**/*.purs" ]
 , name = "deku-starter"
 , dependencies =
-  [ "deku"
+  [ "aff"
+  , "affjax"
+  , "affjax-web"
+  , "deku"
   , "effect"
-  , "hyrule"
+  , "either"
   , "foldable-traversable"
+  , "hyrule"
+  , "maybe"
   , "prelude"
+  , "simple-json"
   , "web-html"
   ]
 , packages = ./packages.dhall

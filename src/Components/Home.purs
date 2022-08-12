@@ -2,25 +2,50 @@ module Components.Home where
 
 import Prelude
 
-import Deku.Core (Nut)
+import API.Types (Article, MultipleArticles)
+import Date (prettyDate)
+import Deku.Attribute ((:=))
+import Deku.Control (blank, switcher, text_)
+import Deku.Core (class Korok, Domable)
+import Deku.DOM as D
 import Deku.Pursx (nut, (~~))
+import FRP.Event (AnEvent, Event, fromEvent)
 import Type.Proxy (Proxy(..))
 
-articlePreview_ = Proxy :: Proxy """
+data ArticleLoadStatus = ArticlesLoading | ArticlesLoaded MultipleArticles
+
+articlePreview :: forall s m lock payload. Korok s m => Article -> Domable m lock payload
+articlePreview
+  { updatedAt
+  , favoritesCount
+  , title
+  , description
+  , author: { image, username }
+  } = articlePreview_ ~~
+  { image: pure (D.Src := image)
+  , username: nut (text_ username)
+  , title: nut (D.h1_ [text_ title])
+  , description: nut (D.p_ [text_ description])
+  , date: nut (text_ (prettyDate updatedAt))
+  , favoritesCount: nut (text_ (show favoritesCount))
+  }
+
+articlePreview_ =
+  Proxy :: Proxy """
                 <div class="article-preview">
                     <div class="article-meta">
-                        <a href="profile.html"><img src="http://i.imgur.com/Qr71crq.jpg"/></a>
+                        <a href="profile.html"><img ~image~ /></a>
                         <div class="info">
-                            <a href="" class="author">Eric Simons</a>
-                            <span class="date">January 20th</span>
+                            <a href="" class="author">~username~</a>
+                            <span class="date">~date~</span>
                         </div>
                         <button class="btn btn-outline-primary btn-sm pull-xs-right">
-                            <i class="ion-heart"></i> 29
+                            <i class="ion-heart"></i> ~favoritesCount~
                         </button>
                     </div>
                     <a href="" class="preview-link">
-                        <h1>How to build webapps that scale</h1>
-                        <p>This is the description for the post.</p>
+                        ~title~
+                        ~description~
                         <span>Read more...</span>
                     </a>
                 </div>
@@ -78,7 +103,28 @@ home_ =
 </div>
 """
 
-home :: Nut
-home = home_ ~~ {
-    articlePreviews: nut (articlePreview_ ~~ {})
-}
+home  :: forall s m lock payload. Korok s m => Event ArticleLoadStatus -> Domable m lock payload
+home articleLoadStatus = home_ ~~
+  { articlePreviews: nut (
+    fromEvent articleLoadStatus # switcher case _ of
+      ArticlesLoading -> blank
+      ArticlesLoaded articles -> D.div_ (map articlePreview articles.articles)  )
+  }
+
+  {-{
+    "slug": "how-to-train-your-dragon",
+    "title": "How to train your dragon",
+    "description": "Ever wonder how?",
+    "body": "It takes a Jacobian",
+    "tagList": ["dragons", "training"],
+    "createdAt": "2016-02-18T03:22:56.637Z",
+    "updatedAt": "2016-02-18T03:48:35.824Z",
+    "favorited": false,
+    "favoritesCount": 0,
+    "author": {
+      "username": "jake",
+      "bio": "I work at statefarm",
+      "image": "https://i.stack.imgur.com/xHWG8.jpg",
+      "following": false
+    }
+  }-}
