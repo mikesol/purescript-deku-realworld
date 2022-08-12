@@ -23,8 +23,9 @@ import Deku.DOM as D
 import Deku.Toplevel (runInBodyA)
 import Effect (Effect)
 import FRP.AffToEvent (affToEvent)
-import FRP.Event (burning, fromEvent, hot)
+import FRP.Event (burning, fromEvent)
 import FRP.Event as Event
+import FRP.FireAndForget (fireAndForget)
 import Route (route, Route(..))
 import Routing.Duplex (parse)
 import Routing.Hash (matchesWith)
@@ -37,7 +38,7 @@ import Web.Storage.Storage (getItem, removeItem, setItem)
 
 main :: Effect Unit
 main = do
-  maybeUser <- (map JSON.readJSON_ >>> join) <$> (window >>= localStorage >>= getItem "session")
+  maybeUser <- (_ >>= JSON.readJSON_) <$> (window >>= localStorage >>= getItem "session")
   routeEvent <- Event.create >>= \{ event, push } ->
     matchesWith (parse route) (curry push)
       *> map _.event (burning (Nothing /\ Home) event)
@@ -56,7 +57,7 @@ main = do
         [ ( routeEvent # switcher case _ of
               _ /\ Home -> home currentUser.event (pure ArticlesLoading <|> (ArticlesLoaded <$> affToEvent getArticles)) (TagsLoaded <$> affToEvent getTags)
               _ /\ Article s -> envy $ fromEvent $ (map article (affToEvent (getArticle s)))
-              _ /\ Settings -> settings (compact currentUser.event) (Just >>> currentUser.push)
+              _ /\ Settings -> settings (fireAndForget (compact currentUser.event)) (Just >>> currentUser.push)
               _ /\ Editor -> create
               _ /\ LogIn -> login logIn
               _ /\ Register -> register logIn
