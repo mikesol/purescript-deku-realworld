@@ -66,9 +66,9 @@ settings currentUser setCurrentUser = settings_ ~~
                       (map (D.li_ <<< pure <<< text_) errs)
                 ]
             , D.div_
-                [ fieldset false "URL of profile picture" (Just >>> setName)
+                [ fieldset false "URL of profile picture" (Just >>> setProfilePictureUrl)
                 , fieldset false "Your Name" (Just >>> setName)
-                , fieldset false "Short bio about you" (Just >>> setName)
+                , fieldset false "Short bio about you" (Just >>> setBio)
                 , fieldset false "Email" (Just >>> setEmail)
                 , fieldset true "Password" (Just >>> setPassword)
                 , D.button
