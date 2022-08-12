@@ -38,15 +38,15 @@ main = do
   currentUser <- Event.create >>= \{ event, push } -> do
     burning Nothing event <#> _.event >>> { push, event: _ }
   runInBodyA
-    [ nav (map snd routeEvent) currentUser.event
+    [ nav (currentUser.push Nothing) (map snd routeEvent) currentUser.event
     , D.div_
         [ ( routeEvent # switcher case _ of
               _ /\ Home -> home currentUser.event (ArticlesLoaded <$> affToEvent (getArticles))
               _ /\ Article s -> envy $ fromEvent $ (map article (affToEvent (getArticle s)))
               _ /\ Settings -> settings
               _ /\ Editor -> create
-              _ /\ LogIn -> login
-              _ /\ Register -> register
+              _ /\ LogIn -> login (Just >>> currentUser.push)
+              _ /\ Register -> register (Just >>> currentUser.push)
               _ /\ Profile -> profile
           )
         ]
