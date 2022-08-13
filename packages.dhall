@@ -11,7 +11,7 @@ let overrides =
       , deku =
         { dependencies = [ "prelude","bolson", "quickcheck" ]
         , repo = "https://github.com/mikesol/purescript-deku.git"
-        , version = "main"
+        , version = "no-span2"
         }
       , hyrule =
         { dependencies =
