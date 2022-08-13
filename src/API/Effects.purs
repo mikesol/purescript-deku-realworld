@@ -2,7 +2,7 @@ module API.Effects where
 
 import Prelude
 
-import API.Types (MultipleArticles, RegistrationRequest, RegistrationResponse, SignInRequest, SignInResponse, SingleArticle, UpdateUserRequest)
+import API.Types (MultipleArticles, Profile, RegistrationRequest, RegistrationResponse, SignInRequest, SignInResponse, UpdateUserRequest, SingleArticle)
 import Affjax.RequestBody as RequestFormat
 import Affjax.RequestHeader (RequestHeader(..))
 import Affjax.ResponseFormat as ResponseFormat
@@ -15,12 +15,12 @@ import Effect.Aff (Aff, error, throwError)
 import Foreign.Object (Object)
 import Simple.JSON as JSON
 
-simpleGet' :: forall r. JSON.ReadForeign r => Array RequestHeader -> String -> Aff r
-simpleGet' headers url = do
+simpleGetOrDelete' :: forall r. JSON.ReadForeign r => Method -> Array RequestHeader -> String -> Aff r
+simpleGetOrDelete' method headers url = do
   res <- request
     ( defaultRequest
         { responseFormat = ResponseFormat.string
-        , method = Left GET
+        , method = Left method
         , url = url
         , headers = headers
         }
@@ -34,14 +34,20 @@ simpleGet' headers url = do
         Left e -> do
           throwError $ error $ "Can't parse JSON. " <> show e
 
+simpleGet' :: forall r. JSON.ReadForeign r => Array RequestHeader -> String -> Aff r
+simpleGet' = simpleGetOrDelete' GET
+
+simpleDelete' :: forall r. JSON.ReadForeign r => Array RequestHeader -> String -> Aff r
+simpleDelete' = simpleGetOrDelete' DELETE
+
 simpleGet :: forall r. JSON.ReadForeign r => String -> Aff r
 simpleGet = simpleGet' []
 
-simplePostOrPut' :: forall i o. JSON.WriteForeign i => JSON.ReadForeign o => Method -> Array RequestHeader -> String -> i -> Aff (PostReturn o)
+simplePostOrPut' :: forall i o. JSON.WriteForeign i => JSON.ReadForeign o => Method -> Array RequestHeader -> String -> Maybe i -> Aff (PostReturn o)
 simplePostOrPut' method headers url payload = do
   res <- request
     ( defaultRequest
-        { content = Just (RequestFormat.string (JSON.writeJSON payload))
+        { content = map (RequestFormat.string <<< JSON.writeJSON) payload
         , responseFormat = ResponseFormat.string
         , method = Left method
         , url = url
@@ -58,13 +64,16 @@ simplePostOrPut' method headers url payload = do
           Left e -> throwError $ error $ "Can't parse JSON. " <> show e
 
 simplePost' :: forall i o. JSON.WriteForeign i => JSON.ReadForeign o => Array RequestHeader -> String -> i -> Aff (PostReturn o)
-simplePost' = simplePostOrPut' POST
+simplePost' h u = simplePostOrPut' POST h u <<< Just
+
+simplePostNoBody' :: forall o. JSON.ReadForeign o => Array RequestHeader -> String -> Aff (PostReturn o)
+simplePostNoBody' h u = simplePostOrPut' POST h u (Nothing :: Maybe {})
 
 simplePut' :: forall i o. JSON.WriteForeign i => JSON.ReadForeign o => Array RequestHeader -> String -> i -> Aff (PostReturn o)
-simplePut' = simplePostOrPut' PUT
+simplePut' h u = simplePostOrPut' PUT h u <<< Just
 
 simplePost :: forall i o. JSON.WriteForeign i => JSON.ReadForeign o => String -> i -> Aff (PostReturn o)
-simplePost = simplePost' []
+simplePost u = simplePost' [] u <<< Just
 
 type Errors = { errors :: Object (Array String) }
 type PostReturn a = Either Errors a
@@ -92,3 +101,15 @@ logIn payload = simplePost "https://api.realworld.io/api/users/login" payload
 
 updateUser :: String -> UpdateUserRequest -> Aff (PostReturn SignInResponse)
 updateUser token payload = simplePut' [ RequestHeader "Authorization" ("Token " <> token)] "https://api.realworld.io/api/user" payload
+
+follow :: String -> String -> Aff (PostReturn { profile :: Profile})
+follow token user = simplePostNoBody' [ RequestHeader "Authorization" ("Token " <> token)] ("https://api.realworld.io/api/profiles/" <> user <> "/follow")
+
+unfollow :: String -> String -> Aff { profile :: Profile}
+unfollow token user = simpleDelete' [ RequestHeader "Authorization" ("Token " <> token)] ("https://api.realworld.io/api/profiles/" <> user <> "/follow")
+
+favorite :: String -> String -> Aff (PostReturn SingleArticle)
+favorite token slug = simplePostNoBody' [ RequestHeader "Authorization" ("Token " <> token)] ("https://api.realworld.io/api/articles/" <> slug <> "/favorite")
+
+unfavorite :: String -> String -> Aff SingleArticle
+unfavorite token slug = simpleDelete' [ RequestHeader "Authorization" ("Token " <> token)] ("https://api.realworld.io/api/articles/" <> slug <> "/favorite")

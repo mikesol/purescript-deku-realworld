@@ -28,6 +28,12 @@ type Article =
       }
   }
 
+type Profile = { username :: String
+      , bio :: Maybe String
+      , image :: String
+      , following :: Boolean
+      }
+
 -- endpoint
 
 type SignInRequest = { user :: { email :: String, password :: String } }

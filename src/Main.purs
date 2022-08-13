@@ -56,7 +56,8 @@ main = do
     , D.div_
         [ ( routeEvent # switcher case _ of
               _ /\ Home -> home currentUser.event (pure ArticlesLoading <|> (ArticlesLoaded <$> affToEvent getArticles)) (TagsLoaded <$> affToEvent getTags)
-              _ /\ Article s -> envy $ fromEvent $ (map article (affToEvent (getArticle s)))
+              _ /\ Article s -> envy $ fromEvent
+                $ (map (article currentUser.event) (affToEvent (getArticle s)))
               _ /\ Settings -> settings (fireAndForget (compact currentUser.event)) setUser
               _ /\ Editor -> create
               _ /\ LogIn -> login setUser
