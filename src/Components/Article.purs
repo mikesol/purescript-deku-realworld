@@ -32,6 +32,11 @@ import Web.HTML.Window (document)
 
 data ArticleStatus = ArticleLoading | ArticleLoaded SingleArticle (Array Comment)
 
+data CommentText = CommentText String | NoText
+
+derive instance Eq CommentText
+
+
 articleLoading_ =
   Proxy :: Proxy
          """<div class="article-page">
@@ -170,10 +175,6 @@ article_ =
 
 </div>
 """
-
-data CommentText = CommentText String | NoText
-
-derive instance Eq CommentText
 
 article :: forall s m lock payload. Korok s m => AnEvent m AuthState -> ArticleStatus -> Domable m lock payload
 article e (ArticleLoaded a cmt) = articleLoaded e a cmt

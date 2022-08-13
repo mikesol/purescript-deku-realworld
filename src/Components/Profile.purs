@@ -1,9 +1,14 @@
 module Components.Profile where
 
 
-import Deku.Core (Nut)
+import API.Types (AuthState, SingleProfile)
+import Deku.Core (class Korok, Domable, Nut)
 import Deku.Pursx ((~~))
+import FRP.Event (AnEvent)
 import Type.Proxy (Proxy(..))
+
+data ProfileStatus = ProfileLoading | ProfileLoaded SingleProfile
+
 
 profile_ =
   Proxy :: Proxy """<div class="profile-page">
@@ -94,5 +99,36 @@ profile_ =
 </div>
 """
 
-profile :: Nut
-profile = profile_ ~~ {}
+profileLoading_ =
+  Proxy :: Proxy
+         """<div class="profile-page">
+
+    <div class="user-info">
+        <div class="container">
+            <div class="row">
+
+                <div class="col-xs-12 col-md-10 offset-md-1">
+                    <h4>Loading...</h4>
+                    </div>
+                    </div>
+                    </div>
+                    </div>
+                    </div>
+"""
+
+
+
+profile :: forall s m lock payload. Korok s m => AnEvent m AuthState -> ProfileStatus -> Domable m lock payload
+profile e (ProfileLoaded a) = profileLoaded e a
+profile e ProfileLoading = profileLoading_ ~~ {}
+
+profileLoaded :: forall s m lock payload. Korok s m => AnEvent m AuthState -> SingleProfile -> Domable m lock payload
+profileLoaded
+  currentUser
+  { profile:
+      { username
+      }
+  } = Deku.do
+  profile_ ~~
+    {
+    }

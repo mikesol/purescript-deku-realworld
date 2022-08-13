@@ -2,7 +2,7 @@ module API.Effects where
 
 import Prelude
 
-import API.Types (MultipleArticles, MultipleComments, Profile, RegistrationRequest, RegistrationResponse, SignInRequest, SignInResponse, SingleArticle, UpdateUserRequest, Comment)
+import API.Types (Comment, MultipleArticles, MultipleComments, Profile, RegistrationRequest, RegistrationResponse, SignInRequest, SignInResponse, SingleArticle, UpdateUserRequest, SingleProfile)
 import Affjax.RequestBody as RequestFormat
 import Affjax.RequestHeader (RequestHeader(..))
 import Affjax.ResponseFormat as ResponseFormat
@@ -125,3 +125,6 @@ deleteComment :: String -> String -> Int -> Aff Unit
 deleteComment token slug id = do
   _ :: Foreign <- simpleDelete' [ RequestHeader "Authorization" ("Token " <> token) ] ("https://api.realworld.io/api/articles/" <> slug <> "/comments/" <> show id)
   pure unit
+
+getProfile :: String -> Aff SingleProfile
+getProfile username = simpleGet ("https://api.realworld.io/api/profiles/" <> username)

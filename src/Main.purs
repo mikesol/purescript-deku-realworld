@@ -2,7 +2,7 @@ module Main where
 
 import Prelude
 
-import API.Effects (comments, getArticle, getArticles, getTags)
+import API.Effects (comments, getArticle, getArticles, getProfile, getTags)
 import API.Types (AuthState(..), maybeToAuthState, mostRecentCurrentUser)
 import Bolson.Control (switcher)
 import Components.Article (ArticleStatus(..), article)
@@ -11,7 +11,7 @@ import Components.Footer (footer)
 import Components.Home (ArticleLoadStatus(..), TagsLoadStatus(..), home)
 import Components.Login (login)
 import Components.Nav (nav)
-import Components.Profile (profile)
+import Components.Profile (ProfileStatus(..), profile)
 import Components.Register (register)
 import Components.Settings (settings)
 import Control.Alt ((<|>))
@@ -54,12 +54,12 @@ main = do
     , D.div_
         [ ( routeEvent # switcher case _ of
               _ /\ Home -> home currentUser.event (pure ArticlesLoading <|> (ArticlesLoaded <$> affToEvent getArticles)) (TagsLoaded <$> affToEvent getTags)
-              _ /\ Article s -> D.div_ [switcher (article currentUser.event) (pure ArticleLoading <|> (ArticleLoaded <$> affToEvent (getArticle s) <*> affToEvent (_.comments <$> comments s) ))]
+              _ /\ Article slug -> D.div_ [switcher (article currentUser.event) (pure ArticleLoading <|> (ArticleLoaded <$> affToEvent (getArticle slug) <*> affToEvent (_.comments <$> comments slug) ))]
               _ /\ Settings -> settings (mostRecentCurrentUser currentUser.event) setUser
               _ /\ Editor -> create
               _ /\ LogIn -> login setUser
               _ /\ Register -> register setUser
-              _ /\ Profile slug -> profile
+              _ /\ Profile username -> D.div_ [switcher (profile currentUser.event) (pure ProfileLoading <|> (ProfileLoaded <$> affToEvent (getProfile username)  ))]
           )
         ]
     , footer

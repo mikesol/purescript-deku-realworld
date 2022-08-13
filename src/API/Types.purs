@@ -50,6 +50,8 @@ type SingleComment = { comment :: Comment }
 
 type MultipleComments = { comments :: Array Comment }
 
+type SingleProfile = { profile :: Profile }
+
 -- endpoint
 
 type SignInRequest = { user :: { email :: String, password :: String } }

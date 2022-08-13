@@ -12,6 +12,7 @@
   , "either"
   , "filterable"
   , "foldable-traversable"
+  , "foreign"
   , "foreign-object"
   , "http-methods"
   , "hyrule"
@@ -24,6 +25,7 @@
   , "st"
   , "transformers"
   , "tuples"
+  , "web-dom"
   , "web-html"
   , "web-storage"
   ]
