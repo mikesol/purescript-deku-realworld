@@ -88,6 +88,12 @@ getArticleFeed token = simpleGet' [ RequestHeader "Authorization" ("Token " <> t
 getArticlesWithTag :: String -> Aff MultipleArticles
 getArticlesWithTag tag = simpleGet $ "https://api.realworld.io/api/articles?tag=" <> tag
 
+getArticlesWithAuthor :: String -> Aff MultipleArticles
+getArticlesWithAuthor tag = simpleGet $ "https://api.realworld.io/api/articles?author=" <> tag
+
+getArticlesWithFavorited :: String -> Aff MultipleArticles
+getArticlesWithFavorited tag = simpleGet $ "https://api.realworld.io/api/articles?favorited=" <> tag
+
 getTags :: Aff { tags :: Array String }
 getTags = simpleGet "https://api.realworld.io/api/tags"
 

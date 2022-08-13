@@ -2,7 +2,7 @@ module Main where
 
 import Prelude
 
-import API.Effects (comments, getArticle, getArticles, getProfile, getTags)
+import API.Effects (comments, getArticle, getArticles, getArticlesWithAuthor, getArticlesWithFavorited, getProfile, getTags)
 import API.Types (AuthState(..), maybeToAuthState, mostRecentCurrentUser)
 import Bolson.Control (switcher)
 import Components.Article (ArticleStatus(..), article)
@@ -59,7 +59,7 @@ main = do
               _ /\ Editor -> create
               _ /\ LogIn -> login setUser
               _ /\ Register -> register setUser
-              _ /\ Profile username -> D.div_ [switcher (profile currentUser.event) (pure ProfileLoading <|> (ProfileLoaded <$> affToEvent (getProfile username)  ))]
+              _ /\ Profile username -> D.div_ [switcher (profile currentUser.event) (pure ProfileLoading <|> (ProfileLoaded <$> affToEvent (getProfile username) <*> affToEvent (getArticlesWithAuthor username) <*> affToEvent (getArticlesWithFavorited username)  ) )]
           )
         ]
     , footer

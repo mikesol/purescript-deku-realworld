@@ -1,13 +1,19 @@
 module Components.Profile where
 
 
-import API.Types (AuthState, SingleProfile)
+import Prelude
+
+import API.Types (AuthState, SingleProfile, MultipleArticles)
+import Data.Maybe (maybe)
+import Deku.Attribute ((:=))
+import Deku.Control (blank, text_)
 import Deku.Core (class Korok, Domable, Nut)
-import Deku.Pursx ((~~))
+import Deku.DOM as D
+import Deku.Pursx (nut, (~~))
 import FRP.Event (AnEvent)
 import Type.Proxy (Proxy(..))
 
-data ProfileStatus = ProfileLoading | ProfileLoaded SingleProfile
+data ProfileStatus = ProfileLoading | ProfileLoaded SingleProfile MultipleArticles MultipleArticles
 
 
 profile_ =
@@ -18,16 +24,15 @@ profile_ =
             <div class="row">
 
                 <div class="col-xs-12 col-md-10 offset-md-1">
-                    <img src="http://i.imgur.com/Qr71crq.jpg" class="user-img"/>
-                    <h4>Eric Simons</h4>
+                    <img ~image1~ class="user-img"/>
+                    ~name1~
                     <p>
-                        Cofounder @GoThinkster, lived in Aol's HQ for a few months, kinda looks like Peeta from the
-                        Hunger Games
+                        ~bio1~
                     </p>
                     <button class="btn btn-sm btn-outline-secondary action-btn">
                         <i class="ion-plus-round"></i>
                         &nbsp;
-                        Follow Eric Simons
+                        Follow ~name2~
                     </button>
                 </div>
 
@@ -52,7 +57,7 @@ profile_ =
 
                 <div class="article-preview">
                     <div class="article-meta">
-                        <a href=""><img src="http://i.imgur.com/Qr71crq.jpg"/></a>
+                        <a href="" ><img src="http://i.imgur.com/Qr71crq.jpg"/></a>
                         <div class="info">
                             <a href="" class="author">Eric Simons</a>
                             <span class="date">January 20th</span>
@@ -119,16 +124,23 @@ profileLoading_ =
 
 
 profile :: forall s m lock payload. Korok s m => AnEvent m AuthState -> ProfileStatus -> Domable m lock payload
-profile e (ProfileLoaded a) = profileLoaded e a
+profile e (ProfileLoaded a b c) = profileLoaded e a b c
 profile e ProfileLoading = profileLoading_ ~~ {}
 
-profileLoaded :: forall s m lock payload. Korok s m => AnEvent m AuthState -> SingleProfile -> Domable m lock payload
+profileLoaded :: forall s m lock payload. Korok s m => AnEvent m AuthState -> SingleProfile -> MultipleArticles -> MultipleArticles -> Domable m lock payload
 profileLoaded
   currentUser
   { profile:
       { username
+      , image
+      , bio
       }
-  } = Deku.do
+  }
+  myArticles
+  favoritedArticles = Deku.do
   profile_ ~~
-    {
+    { image1: pure (D.Src := image)
+    , name1: nut (D.h4_ [text_ username])
+    , bio1: nut (maybe blank (\b -> D.h4_ [text_ b]) bio)
+    , name2: nut (text_ username)
     }
