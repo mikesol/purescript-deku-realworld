@@ -5,6 +5,7 @@ import Prelude
 import API.Effects (favorite, follow, unfavorite, unfollow)
 import API.Types (SingleArticle, User)
 import Control.Alt ((<|>))
+import Data.Compactable (compact)
 import Data.Foldable (for_, oneOf)
 import Data.Maybe (Maybe, isJust)
 import Data.Tuple.Nested ((/\))
@@ -150,7 +151,7 @@ article
   { article:
       { title
       , slug
-      , favoritesCount
+      , favoritesCount: fCount
       , description
       , body
       , favorited
@@ -163,34 +164,32 @@ article
   } = Deku.do
   setFollowing /\ isFollowing <- useMemoized (_ <|> pure following)
   setFavorited /\ isFavorited <- useMemoized (_ <|> pure favorited)
-  setFavoritesCount /\ favoritesCount <- useMemoized ((_ <|> pure favoritesCount) >>> dedup)
+  setFavoritesCount /\ favoritesCount <- useMemoized ((_ <|> pure fCount) >>> dedup)
   let
     followAttrs = oneOf
       [ currentUser <#> \cu -> D.Class := ("btn btn-sm btn-outline-secondary" <> if isJust cu then "" else " disabled")
-      , click $ ({ cu: _, flw: _ } <$> currentUser <*> isFollowing) <#> \{ cu, flw } -> do
-          for_ cu \cu' -> do
-            setFollowing (not flw)
-            launchAff_ do
-              if flw then
-                void $ unfollow cu'.token username
-              else
-                void $ follow cu'.token username
+      , click $ ({ cu: _, flw: _ } <$> (compact currentUser) <*> isFollowing) <#> \{ cu, flw } -> do
+          setFollowing (not flw)
+          launchAff_ do
+            if flw then
+              void $ unfollow cu.token username
+            else
+              void $ follow cu.token username
       ]
   let followText = nut (text (isFollowing <#> if _ then "Following" else "Follow"))
   let
     favoriteAttrs = oneOf
       [ currentUser <#> \cu -> D.Class := ("btn btn-sm btn-outline-primary" <> if isJust cu then "" else " disabled")
-      , click $ ({ cu: _, fv: _, fc: _ } <$> currentUser <*> isFavorited <*> favoritesCount) <#> \{ cu, fv, fc } -> do
-          for_ cu \cu' -> do
-            setFavoritesCount (fc + if fv then -1 else 1)
-            setFavorited (not fv)
-            launchAff_ do
-              if fv then do
-                r <- unfavorite cu'.token slug
-                liftEffect $ setFavoritesCount r.article.favoritesCount
-              else do
-                r <- favorite cu'.token slug
-                liftEffect $ for_ r (_.article.favoritesCount >>> setFavoritesCount)
+      , click $ ({ cu: _, fv: _, fc: _ } <$> (compact currentUser) <*> isFavorited <*> favoritesCount) <#> \{ cu, fv, fc } -> do
+          setFavoritesCount (fc + if fv then -1 else 1)
+          setFavorited (not fv)
+          launchAff_ do
+            if fv then do
+              r <- unfavorite cu.token slug
+              liftEffect $ setFavoritesCount r.article.favoritesCount
+            else do
+              r <- favorite cu.token slug
+              liftEffect $ for_ r (_.article.favoritesCount >>> setFavoritesCount)
       ]
   let favoriteText = nut (text (isFavorited <#> if _ then "Favorited" else "Favorite Post"))
   let img = pure (D.Src := image)
