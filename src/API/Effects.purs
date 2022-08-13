@@ -2,7 +2,7 @@ module API.Effects where
 
 import Prelude
 
-import API.Types (MultipleArticles, Profile, RegistrationRequest, RegistrationResponse, SignInRequest, SignInResponse, SingleArticle, UpdateUserRequest, MultipleComments)
+import API.Types (MultipleArticles, MultipleComments, Profile, RegistrationRequest, RegistrationResponse, SignInRequest, SignInResponse, SingleArticle, UpdateUserRequest, Comment)
 import Affjax.RequestBody as RequestFormat
 import Affjax.RequestHeader (RequestHeader(..))
 import Affjax.ResponseFormat as ResponseFormat
@@ -12,6 +12,7 @@ import Data.HTTP.Method (Method(..))
 import Data.Maybe (Maybe(..))
 import Data.MediaType.Common (applicationJSON)
 import Effect.Aff (Aff, error, throwError)
+import Foreign (Foreign)
 import Foreign.Object (Object)
 import Simple.JSON as JSON
 
@@ -117,8 +118,10 @@ unfavorite token slug = simpleDelete' [ RequestHeader "Authorization" ("Token " 
 comments :: String -> Aff MultipleComments
 comments slug = simpleGet ("https://api.realworld.io/api/articles/" <> slug <> "/comments")
 
-addComment :: String -> String -> String -> Aff (PostReturn SingleArticle)
+addComment :: String -> String -> String -> Aff (PostReturn { comment :: Comment})
 addComment token slug body = simplePost' [ RequestHeader "Authorization" ("Token " <> token) ] ("https://api.realworld.io/api/articles/" <> slug <> "/comments") { comment: { body } }
 
-deleteComment :: String -> String -> Int -> Aff SingleArticle
-deleteComment token slug id = simpleDelete' [ RequestHeader "Authorization" ("Token " <> token) ] ("https://api.realworld.io/api/articles/" <> slug <> "/comments/" <> show id)
+deleteComment :: String -> String -> Int -> Aff Unit
+deleteComment token slug id = do
+  _ :: Foreign <- simpleDelete' [ RequestHeader "Authorization" ("Token " <> token) ] ("https://api.realworld.io/api/articles/" <> slug <> "/comments/" <> show id)
+  pure unit

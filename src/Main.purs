@@ -2,7 +2,7 @@ module Main where
 
 import Prelude
 
-import API.Effects (getArticle, getArticles, getTags)
+import API.Effects (comments, getArticle, getArticles, getTags)
 import API.Types (AuthState(..), maybeToAuthState, mostRecentCurrentUser)
 import Bolson.Control (switcher)
 import Components.Article (ArticleStatus(..), article)
@@ -54,7 +54,7 @@ main = do
     , D.div_
         [ ( routeEvent # switcher case _ of
               _ /\ Home -> home currentUser.event (pure ArticlesLoading <|> (ArticlesLoaded <$> affToEvent getArticles)) (TagsLoaded <$> affToEvent getTags)
-              _ /\ Article s -> D.div_ [switcher (article currentUser.event) (pure ArticleLoading <|> (ArticleLoaded <$> affToEvent (getArticle s)))]
+              _ /\ Article s -> D.div_ [switcher (article currentUser.event) (pure ArticleLoading <|> (ArticleLoaded <$> affToEvent (getArticle s) <*> affToEvent (_.comments <$> comments s) ))]
               _ /\ Settings -> settings (mostRecentCurrentUser currentUser.event) setUser
               _ /\ Editor -> create
               _ /\ LogIn -> login setUser
