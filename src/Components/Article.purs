@@ -88,9 +88,9 @@ article_ =
             ~title~
 
             <div class="article-meta">
-                <a href=""><img ~image1~ /></a>
+                <a ~authProf1~><img ~image1~ /></a>
                 <div class="info">
-                    <a href="" class="author">~author1~</a>
+                    <a ~authProf2~ class="author">~author1~</a>
                     <span class="date">~lastUpdated~</span>
                 </div>
                 <button ~followAttrs1~ >
@@ -123,9 +123,9 @@ article_ =
 
         <div class="article-actions">
             <div class="article-meta">
-                <a href="profile.html"><img ~image2~ /></a>
+                <a ~authProf3~><img ~image2~ /></a>
                 <div class="info">
-                    <a href="" class="author">~author3~</a>
+                    <a ~authProf4~ class="author">~author3~</a>
                     <span class="date">January 20th</span>
                 </div>
 
@@ -232,6 +232,7 @@ articleLoaded
       ]
   let favoriteText = nut (text (isFavorited <#> if _ then "Favorited" else "Favorite Post"))
   let img = pure (D.Src := image)
+  let authProf = pure (D.Href := "/#/profile/" <> username)
   let authorName = nut (text_ username)
   let fCount = nut (text (show <$> favoritesCount))
   article_ ~~
@@ -239,6 +240,10 @@ articleLoaded
     , image1: img
     , image2: img
     , image3: img
+    , authProf1: authProf
+    , authProf2: authProf
+    , authProf3: authProf
+    , authProf4: authProf
     , body: nut (D.p_ [ text_ body ])
     , description: nut (D.p_ [ text_ description ])
     , author1: authorName

@@ -34,6 +34,8 @@ articlePreview
   , author: { image, username }
   } = articlePreview_ ~~
   { image: pure (D.Src := image)
+  , profile1: pure (D.Href := "/#/profile/" <> username)
+  , profile2: pure (D.Href := "/#/profile/" <> username)
   , href: pure (D.Href := "/#/article/" <> slug)
   , username: nut (text_ username)
   , title: nut (D.h1_ [ text_ title ])
@@ -55,9 +57,9 @@ articlePreview_ =
          """
                 <div class="article-preview">
                     <div class="article-meta">
-                        <a href="profile.html"><img ~image~ /></a>
+                        <a ~profile1~ ><img ~image~ /></a>
                         <div class="info">
-                            <a href="" class="author">~username~</a>
+                            <a ~profile2~ class="author">~username~</a>
                             <span class="date">~date~</span>
                         </div>
                         <button class="btn btn-outline-primary btn-sm pull-xs-right">
@@ -169,7 +171,7 @@ home currentUser articleLoadStatus tagsLoadStatus = Deku.do
                       ( oneOf
                           [ pure $ D.Class := "tag-pill tag-default"
                           , pure $ D.Style := "cursor: pointer;"
-                          , click $ pure $ launchAff_
+                          , click $ pure $ setArticles ArticlesLoading *> launchAff_
                               do
                                 getArticlesWithTag tag >>= liftEffect <<< setArticles <<< ArticlesLoaded
                           ]

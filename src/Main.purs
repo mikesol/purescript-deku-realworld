@@ -59,7 +59,7 @@ main = do
               _ /\ Editor -> create
               _ /\ LogIn -> login setUser
               _ /\ Register -> register setUser
-              _ /\ Profile -> profile
+              _ /\ Profile slug -> profile
           )
         ]
     , footer
