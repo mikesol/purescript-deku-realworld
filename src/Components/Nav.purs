@@ -2,9 +2,8 @@ module Components.Nav where
 
 import Prelude
 
-import API.Types (User)
+import API.Types (AuthState, isSignedIn, isSignedOut)
 import Data.Foldable (oneOf)
-import Data.Maybe (Maybe, isJust, isNothing)
 import Deku.Attribute (Attribute, (:=))
 import Deku.Control (text_)
 import Deku.Core (class Korok, Domable)
@@ -27,19 +26,19 @@ nav_ =
 </nav>"""
 
 nav :: forall s m lock payload.
-  Korok s m => Effect Unit -> AnEvent m Route -> AnEvent m (Maybe User) -> Domable m lock payload
+  Korok s m => Effect Unit -> AnEvent m Route -> AnEvent m AuthState -> Domable m lock payload
 nav logOut route currentUser = nav_ ~~
   { navbar: nut
       ( D.ul (pure $ D.Class := "nav navbar-nav pull-xs-right")
           [ navItem Home "/#/" "Home" (pure true)
-          , navItem Editor "/#/editor" "Editor" isSignedIn
-          , navItem Settings "/#/settings" "Settings" isSignedIn
-          , navItem LogIn "/#/login" "Sign in" isLoggedOut
-          , navItem Register "/#/register" "Sign up" isLoggedOut
+          , navItem Editor "/#/editor" "Editor" (isSignedIn <$> currentUser)
+          , navItem Settings "/#/settings" "Settings" (isSignedIn <$> currentUser)
+          , navItem LogIn "/#/login" "Sign in" (isSignedOut <$> currentUser)
+          , navItem Register "/#/register" "Sign up" (isSignedOut <$> currentUser)
           , D.li
               ( oneOf
                   [ pure $ D.Class := "nav-item"
-                  , doDisplay isSignedIn
+                  , doDisplay (isSignedIn <$> currentUser)
                   ]
               )
               [ D.a
@@ -55,12 +54,6 @@ nav logOut route currentUser = nav_ ~~
       )
   }
   where
-
-  isSignedIn :: AnEvent m Boolean
-  isSignedIn = isJust <$> currentUser
-
-  isLoggedOut :: AnEvent m Boolean
-  isLoggedOut = isNothing <$> currentUser
 
   doDisplay :: AnEvent m Boolean -> AnEvent m (Attribute D.Li_)
   doDisplay displayCondition = dedup displayCondition <#> ((if _ then "" else "display: none;") >>> (D.Style := _))

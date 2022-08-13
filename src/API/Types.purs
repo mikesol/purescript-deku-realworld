@@ -1,6 +1,10 @@
 module API.Types where
 
-import Data.Maybe (Maybe)
+import Prelude
+
+import Data.Filterable (filterMap)
+import Data.Maybe (Maybe(..))
+import FRP.Event (AnEvent)
 
 type User =
   { email :: String
@@ -34,6 +38,18 @@ type Profile = { username :: String
       , following :: Boolean
       }
 
+type Comment = {
+    id :: Int,
+    createdAt :: String,
+    updatedAt :: String,
+    body :: String,
+    author :: Profile
+  }
+
+type SingleComment = { comment :: Comment }
+
+type MultipleComments = { comments :: Array Comment }
+
 -- endpoint
 
 type SignInRequest = { user :: { email :: String, password :: String } }
@@ -59,3 +75,31 @@ type UpdateUserResponse = { user :: User }
 type SingleArticle = { article :: Article }
 
 type MultipleArticles = { articles :: Array Article }
+
+data AuthState = SignedIn User | SignedOut
+
+isSignedIn :: AuthState -> Boolean
+isSignedIn (SignedIn _) = true
+isSignedIn SignedOut = false
+
+whenSignedIn
+  :: forall m
+   . Applicative m
+  => AuthState
+  -> (User -> m Unit)
+  -> m Unit
+whenSignedIn u f = case u of
+  SignedIn user -> f user
+  SignedOut -> pure unit
+
+isSignedOut :: AuthState -> Boolean
+isSignedOut = not isSignedIn
+
+maybeToAuthState :: Maybe User -> AuthState
+maybeToAuthState Nothing = SignedOut
+maybeToAuthState (Just user) = SignedIn user
+
+mostRecentCurrentUser :: forall m. Applicative m => AnEvent m AuthState -> AnEvent m User
+mostRecentCurrentUser = filterMap case _ of
+  SignedIn user -> Just user
+  SignedOut -> Nothing

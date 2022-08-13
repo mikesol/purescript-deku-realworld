@@ -3,17 +3,16 @@ module Components.Home where
 import Prelude
 
 import API.Effects (getArticleFeed, getArticles, getArticlesWithTag)
-import API.Types (Article, MultipleArticles, User)
+import API.Types (Article, AuthState(..), MultipleArticles)
 import Control.Alt ((<|>))
 import Data.Foldable (oneOf)
-import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
 import Date (prettyDate)
 import Deku.Attribute ((:=))
 import Deku.Control (blank, switcher, text_)
 import Deku.Core (class Korok, Domable)
 import Deku.DOM as D
-import Deku.Do (useMemoized, useState, useState')
+import Deku.Do (useMemoized, useState')
 import Deku.Do as Deku
 import Deku.Listeners (click)
 import Deku.Pursx (nut, (~~))
@@ -119,7 +118,7 @@ home_ =
 
 data Tab = Global | Feed
 
-home :: forall s m lock payload. Korok s m => Event (Maybe User) -> Event ArticleLoadStatus -> Event TagsLoadStatus -> Domable m lock payload
+home :: forall s m lock payload. Korok s m => Event AuthState -> Event ArticleLoadStatus -> Event TagsLoadStatus -> Domable m lock payload
 home currentUser articleLoadStatus tagsLoadStatus = Deku.do
   setArticles /\ articles <- useState'
   setTab /\ tab <- useMemoized (_ <|> pure Global)
@@ -133,8 +132,8 @@ home currentUser articleLoadStatus tagsLoadStatus = Deku.do
         [ { cu: _, ct: _ } <$> (fromEvent currentUser) <*> tab <#> \{ cu, ct } -> D.Class := "nav-link"
             <>
               ( case cu of
-                  Just _ -> ""
-                  Nothing -> " disabled"
+                  SignedIn _ -> ""
+                  SignedOut -> " disabled"
               )
             <>
               ( case ct of
@@ -142,11 +141,11 @@ home currentUser articleLoadStatus tagsLoadStatus = Deku.do
                   Global -> ""
               )
         , fromEvent currentUser <#> \cu -> D.Style := case cu of
-            Nothing -> ""
-            Just _ -> "cursor: pointer;"
+            SignedOut -> ""
+            SignedIn _ -> "cursor: pointer;"
         , click $ fromEvent currentUser <#> case _ of
-            Nothing -> pure unit
-            Just cu -> setArticles ArticlesLoading *> launchAff_
+            SignedOut -> pure unit
+            SignedIn cu -> setArticles ArticlesLoading *> launchAff_
               do
                 liftEffect $ setTab Feed
                 getArticleFeed cu.token >>= liftEffect <<< setArticles <<< ArticlesLoaded

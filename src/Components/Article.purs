@@ -3,8 +3,9 @@ module Components.Article where
 import Prelude
 
 import API.Effects (favorite, follow, unfavorite, unfollow)
-import API.Types (SingleArticle, User)
+import API.Types (AuthState, SingleArticle, User, isSignedIn, whenSignedIn)
 import Control.Alt ((<|>))
+import Control.Plus (empty)
 import Data.Foldable (for_, oneOf)
 import Data.Maybe (Maybe, isJust)
 import Data.Tuple.Nested ((/\))
@@ -12,7 +13,7 @@ import Deku.Attribute ((:=))
 import Deku.Control (text, text_)
 import Deku.Core (class Korok, Domable)
 import Deku.DOM as D
-import Deku.Do (useMemoized)
+import Deku.Do (useMemoized, useState)
 import Deku.Do as Deku
 import Deku.Listeners (click)
 import Deku.Pursx (nut, (~~))
@@ -21,6 +22,50 @@ import Effect.Class (liftEffect)
 import FRP.Dedup (dedup)
 import FRP.Event (AnEvent)
 import Type.Proxy (Proxy(..))
+
+data ArticleStatus = ArticleLoading | ArticleLoaded SingleArticle
+
+articleLoading_ =
+  Proxy    :: Proxy
+         """<div class="article-page">
+
+    <div class="banner">
+        <div class="container"><h1>Loading...</h1></div></div></div>
+
+"""
+
+myComment_ = Proxy :: Proxy """
+                <div class="card">
+                    <div class="card-block">
+                        <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
+                    </div>
+                    <div class="card-footer">
+                        <a href="" class="comment-author">
+                            <img src="" class="comment-author-img"/>
+                        </a>
+                        &nbsp;
+                        <a href="" class="comment-author">Jacob Schmidt</a>
+                        <span class="date-posted">Dec 29th</span>
+                        <span class="mod-options">
+              <i class="ion-edit"></i>
+              <i class="ion-trash-a"></i>
+            </span>
+                    </div>
+                </div>"""
+
+theirComment_ = Proxy :: Proxy """<div class="card">
+                    <div class="card-block">
+                        <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
+                    </div>
+                    <div class="card-footer">
+                        <a href="" class="comment-author">
+                            <img src="" class="comment-author-img"/>
+                        </a>
+                        &nbsp;
+                        <a href="" class="comment-author">Jacob Schmidt</a>
+                        <span class="date-posted">Dec 29th</span>
+                    </div>
+                </div>"""
 
 article_ =
   Proxy    :: Proxy
@@ -93,47 +138,17 @@ article_ =
 
                 <form class="card comment-form">
                     <div class="card-block">
-                        <textarea class="form-control" placeholder="Write a comment..." rows="3"></textarea>
+                        <textarea ~commentTextCommand~ class="form-control" placeholder="Write a comment..." rows="3"></textarea>
                     </div>
                     <div class="card-footer">
                         <img ~image4~ class="comment-author-img"/>
-                        <button class="btn btn-sm btn-primary">
+                        <button ~commentButtonCommand~ class="btn btn-sm btn-primary">
                             Post Comment
                         </button>
                     </div>
                 </form>
 
-                <div class="card">
-                    <div class="card-block">
-                        <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
-                    </div>
-                    <div class="card-footer">
-                        <a href="" class="comment-author">
-                            <img ~image5~ class="comment-author-img"/>
-                        </a>
-                        &nbsp;
-                        <a href="" class="comment-author">Jacob Schmidt</a>
-                        <span class="date-posted">Dec 29th</span>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-block">
-                        <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
-                    </div>
-                    <div class="card-footer">
-                        <a href="" class="comment-author">
-                            <img ~image2~ class="comment-author-img"/>
-                        </a>
-                        &nbsp;
-                        <a href="" class="comment-author">Jacob Schmidt</a>
-                        <span class="date-posted">Dec 29th</span>
-                        <span class="mod-options">
-              <i class="ion-edit"></i>
-              <i class="ion-trash-a"></i>
-            </span>
-                    </div>
-                </div>
+                <!-- comments here -->
 
             </div>
 
@@ -144,13 +159,19 @@ article_ =
 </div>
 """
 
-article :: forall s m lock payload. Korok s m => AnEvent m (Maybe User) -> SingleArticle -> Domable m lock payload
-article
+data CommentText = CommentHasText String | NoText
+
+article :: forall s m lock payload. Korok s m => AnEvent m AuthState -> ArticleStatus -> Domable m lock payload
+article e (ArticleLoaded a) = articleLoaded e a
+article e ArticleLoading = articleLoading_ ~~ {}
+
+articleLoaded :: forall s m lock payload. Korok s m => AnEvent m AuthState -> SingleArticle -> Domable m lock payload
+articleLoaded
   currentUser
   { article:
       { title
       , slug
-      , favoritesCount
+      , favoritesCount: favC
       , description
       , body
       , favorited
@@ -161,14 +182,15 @@ article
           }
       }
   } = Deku.do
-  setFollowing /\ isFollowing <- useMemoized (_ <|> pure following)
-  setFavorited /\ isFavorited <- useMemoized (_ <|> pure favorited)
-  setFavoritesCount /\ favoritesCount <- useMemoized ((_ <|> pure favoritesCount) >>> dedup)
+  setFollowing /\ isFollowing <- useState following
+  setFavorited /\ isFavorited <- useState favorited
+  setCommentText /\ commentText <- useState NoText
+  setFavoritesCount /\ favoritesCount <- useMemoized ((_ <|> pure favC) >>> dedup)
   let
     followAttrs = oneOf
-      [ currentUser <#> \cu -> D.Class := ("btn btn-sm btn-outline-secondary" <> if isJust cu then "" else " disabled")
+      [ currentUser <#> \cu -> D.Class := ("btn btn-sm btn-outline-secondary" <> if isSignedIn cu then "" else " disabled")
       , click $ ({ cu: _, flw: _ } <$> currentUser <*> isFollowing) <#> \{ cu, flw } -> do
-          for_ cu \cu' -> do
+          whenSignedIn cu \cu' -> do
             setFollowing (not flw)
             launchAff_ do
               if flw then
@@ -179,9 +201,9 @@ article
   let followText = nut (text (isFollowing <#> if _ then "Following" else "Follow"))
   let
     favoriteAttrs = oneOf
-      [ currentUser <#> \cu -> D.Class := ("btn btn-sm btn-outline-primary" <> if isJust cu then "" else " disabled")
+      [ currentUser <#> \cu -> D.Class := ("btn btn-sm btn-outline-primary" <> if isSignedIn cu then "" else " disabled")
       , click $ ({ cu: _, fv: _, fc: _ } <$> currentUser <*> isFavorited <*> favoritesCount) <#> \{ cu, fv, fc } -> do
-          for_ cu \cu' -> do
+          whenSignedIn cu \cu' -> do
             setFavoritesCount (fc + if fv then -1 else 1)
             setFavorited (not fv)
             launchAff_ do
@@ -199,16 +221,18 @@ article
   article_ ~~
     { title: nut (D.h1_ [ text_ title ])
     , image1: img
-    , image2: img
+    -- , image2: img
     , image3: img
     , image4: img
-    , image5: img
+    --, image5: img
     , body: nut (D.p_ [ text_ body ])
     , description: nut (D.p_ [ text_ description ])
     , author1: authorName
     , author2: authorName
     , author3: authorName
     , author4: authorName
+    , commentTextCommand: oneOf [pure $ D.Id := "foo"]
+    , commentButtonCommand: oneOf [pure $ D.Id := "foo"]
     , favoriteAttrs1: favoriteAttrs
     , favoriteAttrs2: favoriteAttrs
     , favoriteText1: favoriteText

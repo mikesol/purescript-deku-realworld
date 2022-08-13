@@ -2,7 +2,7 @@ module API.Effects where
 
 import Prelude
 
-import API.Types (MultipleArticles, Profile, RegistrationRequest, RegistrationResponse, SignInRequest, SignInResponse, UpdateUserRequest, SingleArticle)
+import API.Types (MultipleArticles, Profile, RegistrationRequest, RegistrationResponse, SignInRequest, SignInResponse, SingleArticle, UpdateUserRequest, MultipleComments)
 import Affjax.RequestBody as RequestFormat
 import Affjax.RequestHeader (RequestHeader(..))
 import Affjax.ResponseFormat as ResponseFormat
@@ -82,7 +82,7 @@ getArticles :: Aff MultipleArticles
 getArticles = simpleGet "https://api.realworld.io/api/articles"
 
 getArticleFeed :: String -> Aff MultipleArticles
-getArticleFeed token = simpleGet' [ RequestHeader "Authorization" ("Token " <> token)] "https://api.realworld.io/api/articles/feed"
+getArticleFeed token = simpleGet' [ RequestHeader "Authorization" ("Token " <> token) ] "https://api.realworld.io/api/articles/feed"
 
 getArticlesWithTag :: String -> Aff MultipleArticles
 getArticlesWithTag tag = simpleGet $ "https://api.realworld.io/api/articles?tag=" <> tag
@@ -100,16 +100,25 @@ logIn :: SignInRequest -> Aff (PostReturn SignInResponse)
 logIn payload = simplePost "https://api.realworld.io/api/users/login" payload
 
 updateUser :: String -> UpdateUserRequest -> Aff (PostReturn SignInResponse)
-updateUser token payload = simplePut' [ RequestHeader "Authorization" ("Token " <> token)] "https://api.realworld.io/api/user" payload
+updateUser token payload = simplePut' [ RequestHeader "Authorization" ("Token " <> token) ] "https://api.realworld.io/api/user" payload
 
-follow :: String -> String -> Aff (PostReturn { profile :: Profile})
-follow token user = simplePostNoBody' [ RequestHeader "Authorization" ("Token " <> token)] ("https://api.realworld.io/api/profiles/" <> user <> "/follow")
+follow :: String -> String -> Aff (PostReturn { profile :: Profile })
+follow token user = simplePostNoBody' [ RequestHeader "Authorization" ("Token " <> token) ] ("https://api.realworld.io/api/profiles/" <> user <> "/follow")
 
-unfollow :: String -> String -> Aff { profile :: Profile}
-unfollow token user = simpleDelete' [ RequestHeader "Authorization" ("Token " <> token)] ("https://api.realworld.io/api/profiles/" <> user <> "/follow")
+unfollow :: String -> String -> Aff { profile :: Profile }
+unfollow token user = simpleDelete' [ RequestHeader "Authorization" ("Token " <> token) ] ("https://api.realworld.io/api/profiles/" <> user <> "/follow")
 
 favorite :: String -> String -> Aff (PostReturn SingleArticle)
-favorite token slug = simplePostNoBody' [ RequestHeader "Authorization" ("Token " <> token)] ("https://api.realworld.io/api/articles/" <> slug <> "/favorite")
+favorite token slug = simplePostNoBody' [ RequestHeader "Authorization" ("Token " <> token) ] ("https://api.realworld.io/api/articles/" <> slug <> "/favorite")
 
 unfavorite :: String -> String -> Aff SingleArticle
-unfavorite token slug = simpleDelete' [ RequestHeader "Authorization" ("Token " <> token)] ("https://api.realworld.io/api/articles/" <> slug <> "/favorite")
+unfavorite token slug = simpleDelete' [ RequestHeader "Authorization" ("Token " <> token) ] ("https://api.realworld.io/api/articles/" <> slug <> "/favorite")
+
+comments :: String -> Aff MultipleComments
+comments slug = simpleGet ("https://api.realworld.io/api/articles/" <> slug <> "/comments")
+
+addComment :: String -> String -> String -> Aff (PostReturn SingleArticle)
+addComment token slug body = simplePost' [ RequestHeader "Authorization" ("Token " <> token) ] ("https://api.realworld.io/api/articles/" <> slug <> "/comments") { comment: { body } }
+
+deleteComment :: String -> String -> Int -> Aff SingleArticle
+deleteComment token slug id = simpleDelete' [ RequestHeader "Authorization" ("Token " <> token) ] ("https://api.realworld.io/api/articles/" <> slug <> "/comments/" <> show id)
