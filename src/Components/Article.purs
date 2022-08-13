@@ -91,7 +91,7 @@ article_ =
                 <a href=""><img ~image1~ /></a>
                 <div class="info">
                     <a href="" class="author">~author1~</a>
-                    <span class="date">January 20th</span>
+                    <span class="date">~lastUpdated~</span>
                 </div>
                 <button ~followAttrs1~ >
                     <i class="ion-plus-round"></i>
@@ -185,6 +185,7 @@ articleLoaded
   { article:
       { title
       , slug
+      , updatedAt
       , favoritesCount: favC
       , description
       , body
@@ -258,6 +259,7 @@ articleLoaded
                             Right c -> liftEffect $ setNewComment c.comment
                             Left e -> throwError (error (show e))
         ]
+    , lastUpdated: nut (text_ (prettyDate updatedAt))
     , favoriteAttrs1: favoriteAttrs
     , favoriteAttrs2: favoriteAttrs
     , favoriteText1: favoriteText
