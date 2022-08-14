@@ -27,6 +27,7 @@
   , "stringutils"
   , "transformers"
   , "tuples"
+  , "validation"
   , "web-dom"
   , "web-html"
   , "web-storage"

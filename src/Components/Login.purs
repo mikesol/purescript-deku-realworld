@@ -6,12 +6,12 @@ import API.Effects (logIn)
 import API.Types (User)
 import Components.Field (largePasswordField, largeTextField)
 import Control.Alt ((<|>))
-import Control.Monad.Except (Except, runExcept, throwError)
 import Data.Array (intercalate)
 import Data.Either (Either(..))
 import Data.Foldable (oneOf)
 import Data.Maybe (Maybe(..), maybe)
 import Data.Tuple.Nested ((/\))
+import Data.Validation.Semigroup (V, invalid, toEither)
 import Deku.Attribute ((:=))
 import Deku.Control (blank, switcher, text_)
 import Deku.Core (class Korok, Domable)
@@ -74,7 +74,7 @@ login setCurrentUser = login_ ~~
                                 parsed = { email: _, password: _ }
                                   <$> withErrors [ "Email cannot be empty" ] fields.email
                                   <*> withErrors [ "Password cannot be empty" ] fields.password
-                              case runExcept parsed of
+                              case toEither parsed of
                                 Left errs -> setErrors errs
                                 Right user -> launchAff_ do
                                   resp <- logIn { user }
@@ -91,5 +91,5 @@ login setCurrentUser = login_ ~~
       )
   }
   where
-  withErrors :: Array String -> Maybe String -> Except (Array String) String
-  withErrors e = maybe (throwError e) pure
+  withErrors :: Array String -> Maybe String -> V (Array String) String
+  withErrors e = maybe (invalid e) pure

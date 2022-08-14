@@ -6,13 +6,13 @@ import API.Effects (createArticle)
 import API.Types (User)
 import Components.Field (largeTextField, textField)
 import Control.Alt ((<|>))
-import Control.Monad.Except (Except, runExcept, throwError)
 import Data.Array (intercalate)
 import Data.Either (Either(..))
 import Data.Foldable (oneOf)
 import Data.Maybe (Maybe(..), maybe)
 import Data.String.Utils (words)
 import Data.Tuple.Nested ((/\))
+import Data.Validation.Semigroup (V, invalid, toEither)
 import Deku.Attribute ((:=))
 import Deku.Control (blank, switcher, text_)
 import Deku.Core (class Korok, Domable)
@@ -98,7 +98,7 @@ create user =
                                     <*> withErrors [ "Description cannot be empty" ] fields.description
                                     <*> withErrors [ "Body cannot be empty" ] (if txt == "" then Nothing else Just txt)
                                     <*> pure fields.tags
-                                case runExcept parsed of
+                                case toEither parsed of
                                   Left errs -> setErrors errs
                                   Right article -> launchAff_ do
                                     resp <- createArticle fields.user.token { article }
@@ -115,5 +115,5 @@ create user =
         )
     }
   where
-  withErrors :: Array String -> Maybe String -> Except (Array String) String
-  withErrors e = maybe (throwError e) pure
+  withErrors :: Array String -> Maybe String -> V (Array String) String
+  withErrors e = maybe (invalid e) pure
