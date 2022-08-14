@@ -152,10 +152,10 @@ home currentUser articleLoadStatus tagsLoadStatus = Deku.do
   setTab /\ tab <- useState Global
   home_ ~~
     { articlePreviews: nut
-        ( (fromEvent articleLoadStatus <|> articles) # switcher case _ of
+        (D.div_ [(fromEvent articleLoadStatus <|> articles) # switcher case _ of
             ArticlesLoading -> loading
             ArticlesLoaded a -> D.div_ (map (articlePreview (fromEvent currentUser)) a.articles)
-        )
+        ])
     , feedAttributes: oneOf
         [ { cu: _, ct: _ } <$> (fromEvent currentUser) <*> tab <#> \{ cu, ct } -> D.Class := "nav-link"
             <>
