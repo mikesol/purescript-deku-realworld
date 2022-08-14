@@ -49,14 +49,15 @@ main = do
     setUser cu = do
       window >>= localStorage >>= setItem "session" (JSON.writeJSON cu)
       currentUser.push (SignedIn cu)
+    mostRecentUser = mostRecentCurrentUser currentUser.event
   runInBodyA
     [ nav logOut (map snd routeEvent) currentUser.event
     , D.div_
         [ ( routeEvent # switcher case _ of
               _ /\ Home -> home currentUser.event (pure ArticlesLoading <|> (ArticlesLoaded <$> affToEvent getArticles)) (TagsLoaded <$> affToEvent getTags)
               _ /\ Article slug -> D.div_ [switcher (article currentUser.event) (pure ArticleLoading <|> (ArticleLoaded <$> affToEvent (getArticle slug) <*> affToEvent (_.comments <$> comments slug) ))]
-              _ /\ Settings -> settings (mostRecentCurrentUser currentUser.event) setUser
-              _ /\ Editor -> create
+              _ /\ Settings -> settings mostRecentUser setUser
+              _ /\ Editor -> create mostRecentUser
               _ /\ LogIn -> login setUser
               _ /\ Register -> register setUser
               _ /\ Profile username -> D.div_ [switcher (profile currentUser.event) (pure ProfileLoading <|> (ProfileLoaded <$> affToEvent (getProfile username) <*> affToEvent (getArticlesWithAuthor username) <*> affToEvent (getArticlesWithFavorited username)  ) )]

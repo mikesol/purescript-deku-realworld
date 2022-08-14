@@ -2,13 +2,13 @@ module Components.Article where
 
 import Prelude
 
-import API.Effects (addComment, deleteComment, favorite, follow, unfavorite, unfollow)
+import API.Effects (addComment, deleteComment)
 import API.Types (AuthState(..), Comment, SingleArticle, isSignedIn, whenSignedIn)
 import Components.Favorited (doFavoriting)
 import Components.Following (followAttrs, followText)
 import Control.Alt ((<|>))
 import Data.Either (Either(..))
-import Data.Foldable (for_, oneOf, oneOfMap)
+import Data.Foldable (oneOf, oneOfMap)
 import Data.Maybe (Maybe(..), maybe)
 import Data.Tuple.Nested ((/\))
 import Date (prettyDate)
@@ -20,17 +20,12 @@ import Deku.Do (useMemoized, useState, useState')
 import Deku.Do as Deku
 import Deku.Listeners (click)
 import Deku.Pursx (nut, (~~))
-import Effect.Aff (error, launchAff_, throwError)
+import Effect.Aff (Milliseconds(..), delay, error, launchAff_, throwError)
 import Effect.Class (liftEffect)
 import FRP.Dedup (dedup)
 import FRP.Event (AnEvent, keepLatest)
 import Type.Proxy (Proxy(..))
-import Web.DOM.Document (toNonElementParentNode)
-import Web.DOM.NonElementParentNode (getElementById)
-import Web.HTML (window)
-import Web.HTML.HTMLDocument (toDocument)
-import Web.HTML.HTMLTextAreaElement (fromElement, value)
-import Web.HTML.Window (document)
+import Web.HTML.HTMLTextAreaElement (value)
 
 data ArticleStatus = ArticleLoading | ArticleLoaded SingleArticle (Array Comment)
 
@@ -38,9 +33,8 @@ data CommentText = CommentText String | NoText
 
 derive instance Eq CommentText
 
-
 articleLoading_ =
-  Proxy :: Proxy
+    Proxy :: Proxy
          """<div class="article-page">
 
     <div class="banner">
@@ -49,7 +43,7 @@ articleLoading_ =
 """
 
 myComment_ =
-  Proxy :: Proxy
+    Proxy :: Proxy
          """
                 <div class="card">
                     <div class="card-block">
@@ -70,7 +64,7 @@ myComment_ =
                 </div>"""
 
 theirComment_ =
-  Proxy :: Proxy
+    Proxy :: Proxy
          """<div class="card">
                     <div class="card-block">
                         <p class="card-text">~body~</p>
@@ -86,7 +80,7 @@ theirComment_ =
                 </div>"""
 
 article_ =
-  Proxy :: Proxy
+    Proxy :: Proxy
          """<div class="article-page">
 
     <div class="banner">
@@ -234,15 +228,25 @@ articleLoaded
     , author2: authorName
     , author3: authorName
     , author4: authorName
-    , commentTextArea: nut (D.textarea (oneOf [pure $ D.SelfT := setCommentTA, pure $ D.Class := "form-control", pure $ D.Placeholder := "Write a comment...", pure $ D.Rows := "3"]) [])
+    , commentTextArea: nut
+        ( D.textarea
+            ( oneOf
+                [ pure $ D.SelfT := \e -> launchAff_ (delay (Milliseconds 0.0) *> liftEffect (setCommentTA e))
+                , pure $ D.Class := "form-control"
+                , pure $ D.Placeholder := "Write a comment..."
+                , pure $ D.Rows := "3"
+                ]
+            )
+            []
+        )
     , commentButtonCommand: oneOf
-        [ click $ ({cu: _, ta: _} <$> currentUser <*> commentTA) <#> \{cu,ta} -> do
-                v <- value ta
-                whenSignedIn cu \cu' -> do
-                    launchAff_ $ do
-                        addComment cu'.token slug v >>= case _ of
-                            Right c -> liftEffect $ setNewComment c.comment
-                            Left e -> throwError (error (show e))
+        [ click $ ({ cu: _, ta: _ } <$> currentUser <*> commentTA) <#> \{ cu, ta } -> do
+            v <- value ta
+            whenSignedIn cu \cu' -> do
+              launchAff_ $ do
+                addComment cu'.token slug v >>= case _ of
+                  Right c -> liftEffect $ setNewComment c.comment
+                  Left e -> throwError (error (show e))
         ]
     , lastUpdated: nut (text_ (prettyDate updatedAt))
     , favoriteAttrs1: favoriteAttrs

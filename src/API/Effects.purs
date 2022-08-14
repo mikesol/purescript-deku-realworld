@@ -2,7 +2,7 @@ module API.Effects where
 
 import Prelude
 
-import API.Types (Comment, MultipleArticles, MultipleComments, Profile, RegistrationRequest, RegistrationResponse, SignInRequest, SignInResponse, SingleArticle, UpdateUserRequest, SingleProfile)
+import API.Types (Comment, CreateArticle, MultipleArticles, MultipleComments, Profile, RegistrationRequest, RegistrationResponse, SignInRequest, SignInResponse, SingleProfile, UpdateUserRequest, SingleArticle)
 import Affjax.RequestBody as RequestFormat
 import Affjax.RequestHeader (RequestHeader(..))
 import Affjax.ResponseFormat as ResponseFormat
@@ -134,3 +134,6 @@ deleteComment token slug id = do
 
 getProfile :: String -> Aff SingleProfile
 getProfile username = simpleGet ("https://api.realworld.io/api/profiles/" <> username)
+
+createArticle :: String -> CreateArticle -> Aff (PostReturn SingleArticle)
+createArticle token = simplePost' [ RequestHeader "Authorization" ("Token " <> token) ] ("https://api.realworld.io/api/articles")

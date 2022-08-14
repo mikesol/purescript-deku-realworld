@@ -32,18 +32,19 @@ type Article =
       }
   }
 
-type Profile = { username :: String
-      , bio :: Maybe String
-      , image :: String
-      , following :: Boolean
-      }
+type Profile =
+  { username :: String
+  , bio :: Maybe String
+  , image :: String
+  , following :: Boolean
+  }
 
-type Comment = {
-    id :: Int,
-    createdAt :: String,
-    updatedAt :: String,
-    body :: String,
-    author :: Profile
+type Comment =
+  { id :: Int
+  , createdAt :: String
+  , updatedAt :: String
+  , body :: String
+  , author :: Profile
   }
 
 type SingleComment = { comment :: Comment }
@@ -77,6 +78,15 @@ type UpdateUserResponse = { user :: User }
 type SingleArticle = { article :: Article }
 
 type MultipleArticles = { articles :: Array Article }
+
+type CreateArticle =
+  { article ::
+      { title :: String
+      , description :: String
+      , body :: String
+      , tagList :: Array String
+      }
+  }
 
 data AuthState = SignedIn User | SignedOut
 
