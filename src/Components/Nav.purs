@@ -30,11 +30,11 @@ nav :: forall s m lock payload.
 nav logOut route currentUser = nav_ ~~
   { navbar: nut
       ( D.ul (pure $ D.Class := "nav navbar-nav pull-xs-right")
-          [ navItem Home "/#/" "Home" (pure true)
-          , navItem Editor "/#/editor" "Editor" (isSignedIn <$> currentUser)
-          , navItem Settings "/#/settings" "Settings" (isSignedIn <$> currentUser)
-          , navItem LogIn "/#/login" "Sign in" (isSignedOut <$> currentUser)
-          , navItem Register "/#/register" "Sign up" (isSignedOut <$> currentUser)
+          [ navItem Home "/#/" "Home" "nav-home" (pure true)
+          , navItem Editor "/#/editor" "Editor" "nav-editor" (isSignedIn <$> currentUser)
+          , navItem Settings "/#/settings" "Settings" "nav-settings" (isSignedIn <$> currentUser)
+          , navItem LogIn "/#/login" "Sign in" "nav-sign-in" (isSignedOut <$> currentUser)
+          , navItem Register "/#/register" "Sign up" "nav-sign-up" (isSignedOut <$> currentUser)
           , D.li
               ( oneOf
                   [ pure $ D.Class := "nav-item"
@@ -58,10 +58,11 @@ nav logOut route currentUser = nav_ ~~
   doDisplay :: AnEvent m Boolean -> AnEvent m (Attribute D.Li_)
   doDisplay displayCondition = dedup displayCondition <#> ((if _ then "" else "display: none;") >>> (D.Style := _))
 
-  navItem :: Route -> String -> String -> AnEvent m Boolean -> Domable m lock payload
-  navItem myRoute href label displayCondition = D.li
+  navItem :: Route -> String -> String -> String -> AnEvent m Boolean -> Domable m lock payload
+  navItem myRoute href label id displayCondition = D.li
     ( oneOf
         [ pure $ D.Class := "nav-item"
+        , pure $ D.Id := id
         , doDisplay displayCondition
         ]
     )

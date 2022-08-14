@@ -28,5 +28,7 @@ jobs:
         run: npm ci
       - name: Build
         run: npm run build
+      - name: Test
+        run: npm t
       - name: deploy to netlify @ deku-realworld.netlify.app
         run: NETLIFY_SITE_ID=${{ secrets.NETLIFY_DEKU_REALWORLD_SITE_ID }} NETLIFY_AUTH_TOKEN=${{ secrets.NETLIFY_AUTH_TOKEN }} netlify deploy --dir=dist --prod
