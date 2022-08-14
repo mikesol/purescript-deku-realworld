@@ -4,6 +4,8 @@ import Prelude
 
 import API.Effects (addComment, deleteComment, favorite, follow, unfavorite, unfollow)
 import API.Types (AuthState(..), Comment, SingleArticle, isSignedIn, whenSignedIn)
+import Components.Favorited (doFavoriting)
+import Components.Following (followAttrs, followText)
 import Control.Alt ((<|>))
 import Data.Either (Either(..))
 import Data.Foldable (for_, oneOf, oneOfMap)
@@ -152,7 +154,7 @@ article_ =
 
             <div class="col-xs-12 col-md-8 offset-md-2">
 
-                <div class="card comment-form">
+                <div ~postComment~ class="card comment-form">
                     <div class="card-block">
                         <textarea ~commentTextCommand~ class="form-control" placeholder="Write a comment..." rows="3"></textarea>
                     </div>
@@ -178,7 +180,7 @@ article_ =
 
 article :: forall s m lock payload. Korok s m => AnEvent m AuthState -> ArticleStatus -> Domable m lock payload
 article e (ArticleLoaded a cmt) = articleLoaded e a cmt
-article e ArticleLoading = articleLoading_ ~~ {}
+article _ ArticleLoading = articleLoading_ ~~ {}
 
 articleLoaded :: forall s m lock payload. Korok s m => AnEvent m AuthState -> SingleArticle -> Array Comment -> Domable m lock payload
 articleLoaded
@@ -203,33 +205,13 @@ articleLoaded
   setFavorited /\ isFavorited <- useState favorited
   setNewComment /\ newComment <- useState'
   setFavoritesCount /\ favoritesCount <- useMemoized ((_ <|> pure favC) >>> dedup)
-  let
-    followAttrs = oneOf
-      [ currentUser <#> \cu -> D.Class := ("btn btn-sm btn-outline-secondary" <> if isSignedIn cu then "" else " disabled")
-      , click $ ({ cu: _, flw: _ } <$> currentUser <*> isFollowing) <#> \{ cu, flw } -> do
-          whenSignedIn cu \cu' -> do
-            setFollowing (not flw)
-            launchAff_ do
-              if flw then
-                void $ unfollow cu'.token username
-              else
-                void $ follow cu'.token username
-      ]
-  let followText = nut (text (isFollowing <#> if _ then "Following" else "Follow"))
+  let followAttrs' = followAttrs username currentUser isFollowing setFollowing
+  let followText' = followText isFollowing
   let
     favoriteAttrs = oneOf
-      [ currentUser <#> \cu -> D.Class := ("btn btn-sm btn-outline-primary" <> if isSignedIn cu then "" else " disabled")
-      , click $ ({ cu: _, fv: _, fc: _ } <$> currentUser <*> isFavorited <*> favoritesCount) <#> \{ cu, fv, fc } -> do
-          whenSignedIn cu \cu' -> do
-            setFavoritesCount (fc + if fv then -1 else 1)
-            setFavorited (not fv)
-            launchAff_ do
-              if fv then do
-                r <- unfavorite cu'.token slug
-                liftEffect $ setFavoritesCount r.article.favoritesCount
-              else do
-                r <- favorite cu'.token slug
-                liftEffect $ for_ r (_.article.favoritesCount >>> setFavoritesCount)
+      [ pure $ D.Class := "btn btn-sm btn-outline-primary"
+      , currentUser <#> \cu -> D.Style := if isSignedIn cu then "" else "display: none;"
+      , doFavoriting currentUser slug isFavorited favoritesCount setFavoritesCount setFavorited
       ]
   let favoriteText = nut (text (isFavorited <#> if _ then "Favorited" else "Favorite Post"))
   let img = pure (D.Src := image)
@@ -270,10 +252,11 @@ articleLoaded
     , favoriteAttrs2: favoriteAttrs
     , favoriteText1: favoriteText
     , favoriteText2: favoriteText
-    , followAttrs1: followAttrs
-    , followAttrs2: followAttrs
-    , followText1: followText
-    , followText2: followText
+    , followAttrs1: followAttrs'
+    , followAttrs2: followAttrs'
+    , followText1: followText'
+    , followText2: followText'
+    , postComment: oneOf [ currentUser <#> \cu -> D.Style := if isSignedIn cu then "" else "display: none;" ]
     , articleHeader: nut $ D.h2_ [ text_ title ]
     , favoritesCount1: fCount
     , favoritesCount2: fCount

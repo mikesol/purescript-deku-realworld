@@ -1,23 +1,103 @@
 module Components.Profile where
 
-
 import Prelude
 
-import API.Types (AuthState, SingleProfile, MultipleArticles)
+import API.Types (Article, AuthState(..), MultipleArticles, SingleProfile)
+import Components.Favorited (doFavoriting)
+import Components.Following (followAttrs, followText)
+import Data.Foldable (oneOf)
 import Data.Maybe (maybe)
+import Data.Tuple.Nested ((/\))
+import Date (prettyDate)
 import Deku.Attribute ((:=))
-import Deku.Control (blank, text_)
-import Deku.Core (class Korok, Domable, Nut)
+import Deku.Control (blank, switcher, text, text_)
+import Deku.Core (class Korok, Domable)
 import Deku.DOM as D
+import Deku.Do (useState)
+import Deku.Do as Deku
+import Deku.Listeners (click)
 import Deku.Pursx (nut, (~~))
 import FRP.Event (AnEvent)
 import Type.Proxy (Proxy(..))
 
 data ProfileStatus = ProfileLoading | ProfileLoaded SingleProfile MultipleArticles MultipleArticles
 
+singleArticle_ =
+  Proxy :: Proxy
+         """<div class="article-preview">
+    <div class="article-meta">
+        <a ~author1~><img ~image~ /></a>
+        <div class="info">
+            <a ~author2~ class="author">~name~</a>
+            <span class="date">~date~</span>
+        </div>
+        <div ~signedOutButton~>
+            <i class="ion-heart"></i> ~favoritesCount1~
+        </div>
+        <button ~signedInButton~>
+            <i class="ion-heart"></i> ~favoritesCount2~
+        </button>
+    </div>
+    <a ~toArticle~ class="preview-link">
+        ~title~
+        ~description~
+        <span>Read more...</span>
+        <!-- <ul class="tag-list">
+            <li class="tag-default tag-pill tag-outline">Music</li>
+            <li class="tag-default tag-pill tag-outline">Song</li>
+        </ul> -->
+    </a>
+</div>"""
+
+singleArticle :: forall s m lock payload. Korok s m => AnEvent m AuthState -> Article -> Domable m lock payload
+singleArticle
+  currentUser
+  { updatedAt
+  , favoritesCount: fcount
+  , favorited
+  , slug
+  , title
+  , description
+  , author: { username, image }
+  } = Deku.do
+    setFavoritesCount /\ favoritesCount <- useState fcount
+    setFavorited /\ isFavorited <- useState favorited
+    let fc = nut (text (show <$> favoritesCount))
+    let signedOutButton = oneOf
+            [ pure $ D.Class := "text-success btn-sm pull-xs-right"
+            , currentUser <#> \cu -> D.Style := case cu of
+                SignedIn _ -> "display:none;"
+                SignedOut -> ""
+            ]
+    let signedInButton = oneOf
+            [ pure $ D.Class := "btn btn-outline-primary btn-sm pull-xs-right"
+            , currentUser <#> \cu -> D.Style := case cu of
+                SignedIn _ -> ""
+                SignedOut -> "display:none;"
+          , doFavoriting currentUser slug isFavorited favoritesCount setFavoritesCount setFavorited
+            ]
+    singleArticle_ ~~
+      { author1: authorHref
+      , author2: authorHref
+      , image: authorImg
+      , signedOutButton
+      , signedInButton
+      , favoritesCount1: fc
+      , favoritesCount2: fc
+      , name: nut (text_ username)
+      , date: nut (text_ (prettyDate updatedAt))
+      , title: nut (D.h1_ [ text_ title ])
+      , description: nut (D.p_ [ text_ description ])
+      , toArticle
+      }
+  where
+  authorHref = pure (D.Href := "/#/profile/" <> username)
+  authorImg = pure (D.Src := image)
+  toArticle = pure (D.Href := "/#/article/" <> slug)
 
 profile_ =
-  Proxy :: Proxy """<div class="profile-page">
+  Proxy :: Proxy
+         """<div class="profile-page">
 
     <div class="user-info">
         <div class="container">
@@ -29,10 +109,10 @@ profile_ =
                     <p>
                         ~bio1~
                     </p>
-                    <button class="btn btn-sm btn-outline-secondary action-btn">
+                    <button ~followAttrs~ class="btn btn-sm btn-outline-secondary action-btn">
                         <i class="ion-plus-round"></i>
                         &nbsp;
-                        Follow ~name2~
+                        ~followText~ ~name2~
                     </button>
                 </div>
 
@@ -47,55 +127,14 @@ profile_ =
                 <div class="articles-toggle">
                     <ul class="nav nav-pills outline-active">
                         <li class="nav-item">
-                            <a class="nav-link active" href="">My Articles</a>
+                            <a ~myAttributes~ class="nav-link active">My Articles</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="">Favorited Articles</a>
+                            <a ~favoritedAttributes~ class="nav-link">Favorited Articles</a>
                         </li>
                     </ul>
                 </div>
-
-                <div class="article-preview">
-                    <div class="article-meta">
-                        <a href="" ><img src="http://i.imgur.com/Qr71crq.jpg"/></a>
-                        <div class="info">
-                            <a href="" class="author">Eric Simons</a>
-                            <span class="date">January 20th</span>
-                        </div>
-                        <button class="btn btn-outline-primary btn-sm pull-xs-right">
-                            <i class="ion-heart"></i> 29
-                        </button>
-                    </div>
-                    <a href="" class="preview-link">
-                        <h1>How to build webapps that scale</h1>
-                        <p>This is the description for the post.</p>
-                        <span>Read more...</span>
-                    </a>
-                </div>
-
-                <div class="article-preview">
-                    <div class="article-meta">
-                        <a href=""><img src="http://i.imgur.com/N4VcUeJ.jpg"/></a>
-                        <div class="info">
-                            <a href="" class="author">Albert Pai</a>
-                            <span class="date">January 20th</span>
-                        </div>
-                        <button class="btn btn-outline-primary btn-sm pull-xs-right">
-                            <i class="ion-heart"></i> 32
-                        </button>
-                    </div>
-                    <a href="" class="preview-link">
-                        <h1>The song you won't ever stop singing. No matter how hard you try.</h1>
-                        <p>This is the description for the post.</p>
-                        <span>Read more...</span>
-                        <ul class="tag-list">
-                            <li class="tag-default tag-pill tag-outline">Music</li>
-                            <li class="tag-default tag-pill tag-outline">Song</li>
-                        </ul>
-                    </a>
-                </div>
-
-
+                ~articleList~
             </div>
 
         </div>
@@ -121,11 +160,11 @@ profileLoading_ =
                     </div>
 """
 
-
-
 profile :: forall s m lock payload. Korok s m => AnEvent m AuthState -> ProfileStatus -> Domable m lock payload
 profile e (ProfileLoaded a b c) = profileLoaded e a b c
-profile e ProfileLoading = profileLoading_ ~~ {}
+profile _ ProfileLoading = profileLoading_ ~~ {}
+
+data Tab = MyArticles | FavoritedArticles
 
 profileLoaded :: forall s m lock payload. Korok s m => AnEvent m AuthState -> SingleProfile -> MultipleArticles -> MultipleArticles -> Domable m lock payload
 profileLoaded
@@ -134,13 +173,43 @@ profileLoaded
       { username
       , image
       , bio
+      , following
       }
   }
   myArticles
   favoritedArticles = Deku.do
+  setFollowing /\ isFollowing <- useState following
+  let followAttrs' = followAttrs username currentUser isFollowing setFollowing
+  let followText' = followText isFollowing
+  setTab /\ tab <- useState MyArticles
   profile_ ~~
     { image1: pure (D.Src := image)
-    , name1: nut (D.h4_ [text_ username])
-    , bio1: nut (maybe blank (\b -> D.h4_ [text_ b]) bio)
+    , name1: nut (D.h4_ [ text_ username ])
+    , bio1: nut (maybe blank (\b -> D.h4_ [ text_ b ]) bio)
     , name2: nut (text_ username)
+    , followAttrs: followAttrs'
+    , followText: followText'
+    , favoritedAttributes: oneOf
+        [ tab <#> \ct -> D.Class := "nav-link" <> case ct of
+            FavoritedArticles -> " active"
+            MyArticles -> ""
+        , pure $ D.Style := "cursor: pointer;"
+        , click $ pure $ setTab FavoritedArticles
+        ]
+    , myAttributes: oneOf
+        [ tab <#> \ct -> D.Class := "nav-link" <> case ct of
+            FavoritedArticles -> ""
+            MyArticles -> " active"
+        , pure $ D.Style := "cursor: pointer;"
+        , click $ pure $ setTab MyArticles
+        ]
+    , articleList:
+        let
+          su = singleArticle currentUser
+        in
+          nut $ D.div_
+            [ tab # switcher case _ of
+                FavoritedArticles -> D.div_ (map su favoritedArticles.articles)
+                MyArticles -> D.div_ (map su myArticles.articles)
+            ]
     }

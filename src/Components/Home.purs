@@ -4,45 +4,68 @@ import Prelude
 
 import API.Effects (getArticleFeed, getArticles, getArticlesWithTag)
 import API.Types (Article, AuthState(..), MultipleArticles)
+import Components.Favorited (doFavoriting)
 import Control.Alt ((<|>))
 import Data.Foldable (oneOf)
 import Data.Tuple.Nested ((/\))
 import Date (prettyDate)
 import Deku.Attribute ((:=))
-import Deku.Control (blank, switcher, text_)
+import Deku.Control (blank, switcher, text, text_)
 import Deku.Core (class Korok, Domable)
 import Deku.DOM as D
-import Deku.Do (useMemoized, useState')
+import Deku.Do (useState, useState')
 import Deku.Do as Deku
 import Deku.Listeners (click)
 import Deku.Pursx (nut, (~~))
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
-import FRP.Event (Event, fromEvent)
+import FRP.Event (AnEvent, Event, fromEvent)
 import Type.Proxy (Proxy(..))
 
 data ArticleLoadStatus = ArticlesLoading | ArticlesLoaded MultipleArticles
 data TagsLoadStatus = TagsLoading | TagsLoaded { tags :: Array String }
 
-articlePreview :: forall s m lock payload. Korok s m => Article -> Domable m lock payload
+articlePreview :: forall s m lock payload. Korok s m => AnEvent m AuthState -> Article -> Domable m lock payload
 articlePreview
+  currentUser
   { updatedAt
-  , favoritesCount
+  , favoritesCount: fcount
   , title
   , description
   , slug
+  , favorited
   , author: { image, username }
-  } = articlePreview_ ~~
-  { image: pure (D.Src := image)
-  , profile1: pure (D.Href := "/#/profile/" <> username)
-  , profile2: pure (D.Href := "/#/profile/" <> username)
-  , href: pure (D.Href := "/#/article/" <> slug)
-  , username: nut (text_ username)
-  , title: nut (D.h1_ [ text_ title ])
-  , description: nut (D.p_ [ text_ description ])
-  , date: nut (text_ (prettyDate updatedAt))
-  , favoritesCount: nut (text_ (show favoritesCount))
-  }
+  } = Deku.do
+    setFavoritesCount /\ favoritesCount <- useState fcount
+    setFavorited /\ isFavorited <- useState favorited
+    let fc = nut (text (show <$> favoritesCount))
+    let signedOutButton = oneOf
+          [ pure $ D.Class := "text-success btn-sm pull-xs-right"
+          , currentUser <#> \cu -> D.Style := case cu of
+              SignedIn _ -> "display:none;"
+              SignedOut -> ""
+          ]
+    let signedInButton = oneOf
+          [ pure $ D.Class := "btn btn-outline-primary btn-sm pull-xs-right"
+          , currentUser <#> \cu -> D.Style := case cu of
+              SignedIn _ -> ""
+              SignedOut -> "display:none;"
+          , doFavoriting currentUser slug isFavorited favoritesCount setFavoritesCount setFavorited
+          ]
+    articlePreview_ ~~
+      { image: pure (D.Src := image)
+      , profile1: pure (D.Href := "/#/profile/" <> username)
+      , profile2: pure (D.Href := "/#/profile/" <> username)
+      , signedOutButton
+      , signedInButton
+      , href: pure (D.Href := "/#/article/" <> slug)
+      , username: nut (text_ username)
+      , title: nut (D.h1_ [ text_ title ])
+      , description: nut (D.p_ [ text_ description ])
+      , date: nut (text_ (prettyDate updatedAt))
+      , favoritesCount1: fc
+      , favoritesCount2: fc
+      }
 
 articlesLoading_ =
   Proxy    :: Proxy
@@ -62,9 +85,12 @@ articlePreview_ =
                             <a ~profile2~ class="author">~username~</a>
                             <span class="date">~date~</span>
                         </div>
-                        <button class="btn btn-outline-primary btn-sm pull-xs-right">
-                            <i class="ion-heart"></i> ~favoritesCount~
-                        </button>
+                    <div ~signedOutButton~>
+                        <i class="ion-heart"></i> ~favoritesCount1~
+                    </div>
+                    <button ~signedInButton~>
+                        <i class="ion-heart"></i> ~favoritesCount2~
+                    </button>
                     </div>
                     <a ~href~ class="preview-link">
                         ~title~
@@ -123,12 +149,12 @@ data Tab = Global | Feed
 home :: forall s m lock payload. Korok s m => Event AuthState -> Event ArticleLoadStatus -> Event TagsLoadStatus -> Domable m lock payload
 home currentUser articleLoadStatus tagsLoadStatus = Deku.do
   setArticles /\ articles <- useState'
-  setTab /\ tab <- useMemoized (_ <|> pure Global)
+  setTab /\ tab <- useState Global
   home_ ~~
     { articlePreviews: nut
         ( (fromEvent articleLoadStatus <|> articles) # switcher case _ of
             ArticlesLoading -> loading
-            ArticlesLoaded a -> D.div_ (map articlePreview a.articles)
+            ArticlesLoaded a -> D.div_ (map (articlePreview (fromEvent currentUser)) a.articles)
         )
     , feedAttributes: oneOf
         [ { cu: _, ct: _ } <$> (fromEvent currentUser) <*> tab <#> \{ cu, ct } -> D.Class := "nav-link"
