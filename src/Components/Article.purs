@@ -156,7 +156,7 @@ article_ =
 
                 <div ~postComment~ class="card comment-form">
                     <div class="card-block">
-                        <textarea ~commentTextCommand~ class="form-control" placeholder="Write a comment..." rows="3"></textarea>
+                        ~commentTextArea~
                     </div>
                     <div class="card-footer">
                         <img ~image3~ class="comment-author-img"/>
@@ -204,6 +204,7 @@ articleLoaded
   setFollowing /\ isFollowing <- useState following
   setFavorited /\ isFavorited <- useState favorited
   setNewComment /\ newComment <- useState'
+  setCommentTA /\ commentTA <- useState'
   setFavoritesCount /\ favoritesCount <- useMemoized ((_ <|> pure favC) >>> dedup)
   let followAttrs' = followAttrs username currentUser isFollowing setFollowing
   let followText' = followText isFollowing
@@ -233,13 +234,9 @@ articleLoaded
     , author2: authorName
     , author3: authorName
     , author4: authorName
-    , commentTextCommand: oneOf
-        [ pure $ D.Id := "comment-text"
-        ]
+    , commentTextArea: nut (D.textarea (oneOf [pure $ D.SelfT := setCommentTA, pure $ D.Class := "form-control", pure $ D.Placeholder := "Write a comment...", pure $ D.Rows := "3"]) [])
     , commentButtonCommand: oneOf
-        [ click $ currentUser <#> \cu -> do
-              elt <- window >>= document >>= getElementById "comment-text" <<< toNonElementParentNode <<< toDocument
-              for_ (elt >>= fromElement) \ta -> do
+        [ click $ ({cu: _, ta: _} <$> currentUser <*> commentTA) <#> \{cu,ta} -> do
                 v <- value ta
                 whenSignedIn cu \cu' -> do
                     launchAff_ $ do

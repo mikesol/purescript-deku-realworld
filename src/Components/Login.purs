@@ -4,7 +4,7 @@ import Prelude
 
 import API.Effects (logIn)
 import API.Types (User)
-import Components.Common (passwordField, textField)
+import Components.Field (largePasswordField, largeTextField)
 import Control.Alt ((<|>))
 import Control.Monad.Except (Except, runExcept, throwError)
 import Data.Array (intercalate)
@@ -60,8 +60,8 @@ login setCurrentUser = login_ ~~
                       (map (D.li_ <<< pure <<< text_) errs)
                 ]
             , D.div_
-                [ textField "Email" (Just >>> setEmail)
-                , passwordField "Password" (Just >>> setPassword)
+                [ largeTextField "Email" (Just >>> setEmail)
+                , largePasswordField "Password" (Just >>> setPassword)
                 , D.button
                     ( oneOf
                         [ pure $ D.Class := "btn btn-lg btn-primary pull-xs-right"

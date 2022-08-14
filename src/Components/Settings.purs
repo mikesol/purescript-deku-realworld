@@ -4,7 +4,7 @@ import Prelude
 
 import API.Effects as Effects
 import API.Types (User)
-import Components.Common (passwordField, textFieldWithValue)
+import Components.Field (passwordField, textFieldWithValue)
 import Control.Alt ((<|>))
 import Data.Array (intercalate)
 import Data.Compactable (compact)
