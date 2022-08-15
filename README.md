@@ -26,17 +26,10 @@ Deku's speed is shown off in the following open-source applications:
 
 This app uses idiomatic Deku patterns, including:
 
-- HTML templating. Like Svelte, Deku apps often start with plain HTML, filling in bits of the template with logic as you go along.
-- Reactive events that control all UI and internal state changes and .
-- A hooks-like syntax for working with events.
-- Standard PureScript and functional patterns, including the use of effect monads, applicative validators and generic codecs.
-
-The repo contains additional material going over all four patterns:
-
 - [HTML templating](./wiki/templating.md)
 - [Reactive events](./wiki/events.md)
 - [Hooks](./wiki/hooks.md)
-- [Functional programming in PureScript](./wiki/functional-programming.md)
+- [Classic programming patterns](./wiki/functional-programming.md)
 
 For more information on how to use Deku, check out the [deku documentation](https://mikesol.github.io/purescript-deku). There's also an article called [Horizontal and Vertical Events](https://dev.to/mikesol/horizontal-and-vertical-events-1pm1) that explores some of the framework's design decisions.
 
