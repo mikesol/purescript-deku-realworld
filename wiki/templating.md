@@ -69,4 +69,4 @@ main :: Effect Unit
 main = runInBody app
 ```
 
-Of course, you won't get far without some sort of logic that makes your page more dynamic. Deku makes a page coming alive by using [Events](./event.md).
+Of course, you won't get far without some sort of logic that makes your page more dynamic. Deku makes a page coming alive by using [Events](./events.md).
