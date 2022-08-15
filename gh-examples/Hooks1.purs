@@ -1,4 +1,4 @@
-module Pursx2 where
+module Hooks1 where
 
 import Prelude
 
