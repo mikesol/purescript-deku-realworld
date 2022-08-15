@@ -133,7 +133,7 @@ main :: Effect Unit
 main = runInBody app
 ```
 
-Dynamic elements, like lists, can be created with `dyn` and can be addressed with the `useMailboxed` hook.
+Dynamic elements, like lists, can be created with `dyn` and can be addressed with the `useMailboxed` hook. Removal of dynamic elements is accomplished with the `useRemoval` hook.
 
 [Try Me](https://try.purescript.org/?github=/mikesol/purescript-deku-realworld/main/gh-examples/Hooks3.purs)
 ```purescript
@@ -145,18 +145,17 @@ import Control.Alt ((<|>))
 import Data.Foldable (oneOf)
 import Data.Int (floor)
 import Data.Profunctor (lcmap)
-import Data.Tuple (curry)
 import Data.Tuple.Nested ((/\))
 import Deku.Attribute ((:=))
 import Deku.Control (dyn_, text_)
-import Deku.Core (Nut, bus, insert_, remove)
+import Deku.Core (Nut, insert_)
 import Deku.DOM as D
-import Deku.Do (useMailboxed, useMemoized)
+import Deku.Do (useMailboxed, useMemoized, useRemoval)
 import Deku.Do as Deku
 import Deku.Listeners (click, numeric)
 import Deku.Toplevel (runInBody)
 import Effect (Effect)
-import FRP.Event (fold, keepLatest)
+import FRP.Event (fold)
 
 app :: Nut
 app = Deku.do
@@ -177,14 +176,14 @@ app = Deku.do
     , D.div_ [ D.button (click (pure $ setCounter unit)) [ text_ "Add row" ] ]
     , dyn_
         D.div
-        ( counter <#> \i -> keepLatest Deku.do
-            setRemoveMe /\ removeMe <- bus <<< curry
+        ( counter <#> \i -> Deku.do
+            setRemoveMe /\ removeMe <- useRemoval
             pure
               ( insert_
                   ( D.div_
                       [ D.button
                           ( oneOf
-                              [ click $ pure $ setRemoveMe unit
+                              [ click $ pure setRemoveMe
                               , oneOf
                                   [ makeBold i $> true
                                   , makeNormal i $> false
@@ -195,7 +194,7 @@ app = Deku.do
                       , D.span_ [ text_ (show i) ]
                       ]
                   )
-              ) <|> (removeMe $> remove)
+              ) <|> removeMe
         )
     ]
 
