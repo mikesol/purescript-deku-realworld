@@ -31,7 +31,8 @@ import Web.HTML.Location (setHref)
 import Web.HTML.Window (location)
 
 settings_ =
-  Proxy :: Proxy
+  Proxy
+    :: Proxy
          """<div class="settings-page">
     <div class="container page">
         <div class="row">
@@ -61,10 +62,10 @@ settings currentUser setCurrentUser = settings_ ~~
           let onCurrentUser f = f <$> currentUser
           let onCurrentUserM f = compact (f <$> currentUser)
           D.div_
-            [  errorMessages # switcher_ D.div case _ of
-                    [] -> blank
-                    errs -> D.ul (oneOf [ pure $ D.Class := "error-messages" ])
-                      (map (D.li_ <<< pure <<< text_) errs)
+            [ errorMessages # switcher_ D.div case _ of
+                [] -> blank
+                errs -> D.ul (oneOf [ pure $ D.Class := "error-messages" ])
+                  (map (D.li_ <<< pure <<< text_) errs)
             , D.div_
                 [ textFieldWithValue (onCurrentUserM _.image) "URL of profile picture" (Just >>> setProfilePictureUrl)
                 , textFieldWithValue (onCurrentUser _.username) "Your Name" (Just >>> setName)
@@ -75,20 +76,22 @@ settings currentUser setCurrentUser = settings_ ~~
                     ( oneOf
                         [ pure $ D.Class := "btn btn-lg btn-primary pull-xs-right"
                         , click $
-                            ( {currentUser: _, user: _} <$> currentUser <*> ({ email: _, password: _, username: _, image: _, bio: _ }
-                                <$> email
-                                <*> password
-                                <*> name
-                                <*> profilePictureUrl
-                                <*> bio)
-                            ) <#> \{user, currentUser: cu} -> do
+                            ( { currentUser: _, user: _ } <$> currentUser <*>
+                                ( { email: _, password: _, username: _, image: _, bio: _ }
+                                    <$> email
+                                    <*> password
+                                    <*> name
+                                    <*> profilePictureUrl
+                                    <*> bio
+                                )
+                            ) <#> \{ user, currentUser: cu } -> do
                               launchAff_ do
-                                  resp <- Effects.updateUser cu.token { user }
-                                  liftEffect case resp of
-                                    Left { errors: errs } -> setErrors (map (\(a /\ b) -> a <> " " <> intercalate ", " b) (toUnfoldable errs))
-                                    Right u -> do
-                                      setCurrentUser u.user
-                                      window >>= location >>= setHref "/#/"
+                                resp <- Effects.updateUser cu.token { user }
+                                liftEffect case resp of
+                                  Left { errors: errs } -> setErrors (map (\(a /\ b) -> a <> " " <> intercalate ", " b) (toUnfoldable errs))
+                                  Right u -> do
+                                    setCurrentUser u.user
+                                    window >>= location >>= setHref "/#/"
                         ]
                     )
                     [ text_ "Update Settings" ]

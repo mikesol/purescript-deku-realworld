@@ -30,7 +30,8 @@ import Web.HTML.Location (setHref)
 import Web.HTML.Window (location)
 
 register_ =
-  Proxy    :: Proxy
+  Proxy
+    :: Proxy
          """<div class="auth-page">
     <div class="container page">
         <div class="row">
@@ -58,10 +59,10 @@ register setCurrentUser = register_ ~~
           setPassword /\ password <- useState Nothing
           let errorMessages = ((email <|> password <|> pure Nothing) $> []) <|> errors
           D.div_
-            [  errorMessages # switcher_ D.div case _ of
-                    [] -> blank
-                    errs -> D.ul (oneOf [ pure $ D.Class := "error-messages" ])
-                      (map (D.li_ <<< pure <<< text_) errs)
+            [ errorMessages # switcher_ D.div case _ of
+                [] -> blank
+                errs -> D.ul (oneOf [ pure $ D.Class := "error-messages" ])
+                  (map (D.li_ <<< pure <<< text_) errs)
             , D.div_
                 [ largeTextField "Your Name" (Just >>> setName)
                 , largeTextField "Email" (Just >>> setEmail)

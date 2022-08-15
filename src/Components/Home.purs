@@ -36,39 +36,42 @@ articlePreview
   , favorited
   , author: { image, username }
   } = Deku.do
-    setFavoritesCount /\ favoritesCount <- useState fcount
-    setFavorited /\ isFavorited <- useState favorited
-    let fc = nut (text (show <$> favoritesCount))
-    let signedOutButton = oneOf
-          [ pure $ D.Class := "text-success btn-sm pull-xs-right"
-          , currentUser <#> \cu -> D.Style := case cu of
-              SignedIn _ -> "display:none;"
-              SignedOut -> ""
-          ]
-    let signedInButton = oneOf
-          [ pure $ D.Class := "btn btn-outline-primary btn-sm pull-xs-right"
-          , currentUser <#> \cu -> D.Style := case cu of
-              SignedIn _ -> ""
-              SignedOut -> "display:none;"
-          , doFavoriting currentUser slug isFavorited favoritesCount setFavoritesCount setFavorited
-          ]
-    articlePreview_ ~~
-      { image: pure (D.Src := image)
-      , profile1: pure (D.Href := "/#/profile/" <> username)
-      , profile2: pure (D.Href := "/#/profile/" <> username)
-      , signedOutButton
-      , signedInButton
-      , href: pure (D.Href := "/#/article/" <> slug)
-      , username: nut (text_ username)
-      , title: nut (D.h1_ [ text_ title ])
-      , description: nut (D.p_ [ text_ description ])
-      , date: nut (text_ (prettyDate updatedAt))
-      , favoritesCount1: fc
-      , favoritesCount2: fc
-      }
+  setFavoritesCount /\ favoritesCount <- useState fcount
+  setFavorited /\ isFavorited <- useState favorited
+  let fc = nut (text (show <$> favoritesCount))
+  let
+    signedOutButton = oneOf
+      [ pure $ D.Class := "text-success btn-sm pull-xs-right"
+      , currentUser <#> \cu -> D.Style := case cu of
+          SignedIn _ -> "display:none;"
+          SignedOut -> ""
+      ]
+  let
+    signedInButton = oneOf
+      [ pure $ D.Class := "btn btn-outline-primary btn-sm pull-xs-right"
+      , currentUser <#> \cu -> D.Style := case cu of
+          SignedIn _ -> ""
+          SignedOut -> "display:none;"
+      , doFavoriting currentUser slug isFavorited favoritesCount setFavoritesCount setFavorited
+      ]
+  articlePreview_ ~~
+    { image: pure (D.Src := image)
+    , profile1: pure (D.Href := "/#/profile/" <> username)
+    , profile2: pure (D.Href := "/#/profile/" <> username)
+    , signedOutButton
+    , signedInButton
+    , href: pure (D.Href := "/#/article/" <> slug)
+    , username: nut (text_ username)
+    , title: nut (D.h1_ [ text_ title ])
+    , description: nut (D.p_ [ text_ description ])
+    , date: nut (text_ (prettyDate updatedAt))
+    , favoritesCount1: fc
+    , favoritesCount2: fc
+    }
 
 articlesLoading_ =
-  Proxy    :: Proxy
+  Proxy
+    :: Proxy
          """
                 <div class="article-preview">
                         <h2>Loading...</h2>
@@ -76,7 +79,8 @@ articlesLoading_ =
 """
 
 articlePreview_ =
-  Proxy    :: Proxy
+  Proxy
+    :: Proxy
          """
                 <div class="article-preview">
                     <div class="article-meta">
@@ -101,7 +105,8 @@ articlePreview_ =
 """
 
 home_ =
-  Proxy    :: Proxy
+  Proxy
+    :: Proxy
          """<div class="home-page">
 
     <div class="banner">
@@ -152,7 +157,7 @@ home currentUser articleLoadStatus tagsLoadStatus = Deku.do
   setTab /\ tab <- useState Global
   home_ ~~
     { articlePreviews: nut
-        ((fromEvent articleLoadStatus <|> articles) # switcher_ D.div case _ of
+        ( (fromEvent articleLoadStatus <|> articles) # switcher_ D.div case _ of
             ArticlesLoading -> loading
             ArticlesLoaded a -> D.div_ (map (articlePreview (fromEvent currentUser)) a.articles)
         )

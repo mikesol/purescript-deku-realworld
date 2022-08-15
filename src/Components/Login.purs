@@ -30,7 +30,8 @@ import Web.HTML.Location (setHref)
 import Web.HTML.Window (location)
 
 login_ =
-  Proxy    :: Proxy
+  Proxy
+    :: Proxy
          """<div class="auth-page">
     <div class="container page">
         <div class="row">
@@ -56,7 +57,7 @@ login setCurrentUser = login_ ~~
             [ errorMessages # switcher_ D.div case _ of
                 [] -> blank
                 errs -> D.ul (oneOf [ pure $ D.Class := "error-messages" ])
-                    (map (D.li_ <<< pure <<< text_) errs)
+                  (map (D.li_ <<< pure <<< text_) errs)
             , D.div_
                 [ largeTextField "Email" (Just >>> setEmail)
                 , largePasswordField "Password" (Just >>> setPassword)

@@ -34,7 +34,8 @@ data CommentText = CommentText String | NoText
 derive instance Eq CommentText
 
 articleLoading_ =
-    Proxy :: Proxy
+  Proxy
+    :: Proxy
          """<div class="article-page">
 
     <div class="banner">
@@ -43,7 +44,8 @@ articleLoading_ =
 """
 
 myComment_ =
-    Proxy :: Proxy
+  Proxy
+    :: Proxy
          """
                 <div class="card">
                     <div class="card-block">
@@ -64,7 +66,8 @@ myComment_ =
                 </div>"""
 
 theirComment_ =
-    Proxy :: Proxy
+  Proxy
+    :: Proxy
          """<div class="card">
                     <div class="card-block">
                         <p class="card-text">~body~</p>
@@ -80,7 +83,8 @@ theirComment_ =
                 </div>"""
 
 article_ =
-    Proxy :: Proxy
+  Proxy
+    :: Proxy
          """<div class="article-page">
 
     <div class="banner">

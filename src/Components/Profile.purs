@@ -23,7 +23,8 @@ import Type.Proxy (Proxy(..))
 data ProfileStatus = ProfileLoading | ProfileLoaded SingleProfile MultipleArticles MultipleArticles
 
 singleArticle_ =
-  Proxy :: Proxy
+  Proxy
+    :: Proxy
          """<div class="article-preview">
     <div class="article-meta">
         <a ~author1~><img ~image~ /></a>
@@ -60,43 +61,46 @@ singleArticle
   , description
   , author: { username, image }
   } = Deku.do
-    setFavoritesCount /\ favoritesCount <- useState fcount
-    setFavorited /\ isFavorited <- useState favorited
-    let fc = nut (text (show <$> favoritesCount))
-    let signedOutButton = oneOf
-            [ pure $ D.Class := "text-success btn-sm pull-xs-right"
-            , currentUser <#> \cu -> D.Style := case cu of
-                SignedIn _ -> "display:none;"
-                SignedOut -> ""
-            ]
-    let signedInButton = oneOf
-            [ pure $ D.Class := "btn btn-outline-primary btn-sm pull-xs-right"
-            , currentUser <#> \cu -> D.Style := case cu of
-                SignedIn _ -> ""
-                SignedOut -> "display:none;"
-          , doFavoriting currentUser slug isFavorited favoritesCount setFavoritesCount setFavorited
-            ]
-    singleArticle_ ~~
-      { author1: authorHref
-      , author2: authorHref
-      , image: authorImg
-      , signedOutButton
-      , signedInButton
-      , favoritesCount1: fc
-      , favoritesCount2: fc
-      , name: nut (text_ username)
-      , date: nut (text_ (prettyDate updatedAt))
-      , title: nut (D.h1_ [ text_ title ])
-      , description: nut (D.p_ [ text_ description ])
-      , toArticle
-      }
+  setFavoritesCount /\ favoritesCount <- useState fcount
+  setFavorited /\ isFavorited <- useState favorited
+  let fc = nut (text (show <$> favoritesCount))
+  let
+    signedOutButton = oneOf
+      [ pure $ D.Class := "text-success btn-sm pull-xs-right"
+      , currentUser <#> \cu -> D.Style := case cu of
+          SignedIn _ -> "display:none;"
+          SignedOut -> ""
+      ]
+  let
+    signedInButton = oneOf
+      [ pure $ D.Class := "btn btn-outline-primary btn-sm pull-xs-right"
+      , currentUser <#> \cu -> D.Style := case cu of
+          SignedIn _ -> ""
+          SignedOut -> "display:none;"
+      , doFavoriting currentUser slug isFavorited favoritesCount setFavoritesCount setFavorited
+      ]
+  singleArticle_ ~~
+    { author1: authorHref
+    , author2: authorHref
+    , image: authorImg
+    , signedOutButton
+    , signedInButton
+    , favoritesCount1: fc
+    , favoritesCount2: fc
+    , name: nut (text_ username)
+    , date: nut (text_ (prettyDate updatedAt))
+    , title: nut (D.h1_ [ text_ title ])
+    , description: nut (D.p_ [ text_ description ])
+    , toArticle
+    }
   where
   authorHref = pure (D.Href := "/#/profile/" <> username)
   authorImg = pure (D.Src := image)
   toArticle = pure (D.Href := "/#/article/" <> slug)
 
 profile_ =
-  Proxy :: Proxy
+  Proxy
+    :: Proxy
          """<div class="profile-page">
 
     <div class="user-info">
@@ -144,7 +148,8 @@ profile_ =
 """
 
 profileLoading_ =
-  Proxy :: Proxy
+  Proxy
+    :: Proxy
          """<div class="profile-page">
 
     <div class="user-info">
@@ -208,6 +213,6 @@ profileLoaded
           su = singleArticle currentUser
         in
           nut $ tab # switcher_ D.div case _ of
-                FavoritedArticles -> D.div_ (map su favoritedArticles.articles)
-                MyArticles -> D.div_ (map su myArticles.articles)
+            FavoritedArticles -> D.div_ (map su favoritedArticles.articles)
+            MyArticles -> D.div_ (map su myArticles.articles)
     }

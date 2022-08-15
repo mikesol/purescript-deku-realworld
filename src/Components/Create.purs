@@ -32,7 +32,8 @@ import Web.HTML.Location (setHref)
 import Web.HTML.Window (location)
 
 create_ =
-  Proxy :: Proxy
+  Proxy
+    :: Proxy
          """<div class="editor-page">
     <div class="container page">
         <div class="row">
@@ -59,24 +60,26 @@ create user =
             let errorMessages = ((title <|> description <|> (bodyFocus $> Nothing) <|> (tags $> Nothing) <|> pure Nothing) $> []) <|> errors
             D.div_
               [ errorMessages # switcher_ D.div case _ of
-                      [] -> blank
-                      errs -> D.ul (oneOf [ pure $ D.Class := "error-messages" ])
-                        (map (D.li_ <<< pure <<< text_) errs)
+                  [] -> blank
+                  errs -> D.ul (oneOf [ pure $ D.Class := "error-messages" ])
+                    (map (D.li_ <<< pure <<< text_) errs)
               , D.div_
                   [ largeTextField "Article Title" (Just >>> setTitle)
                   , textField "What's this article about?" (Just >>> setDescription)
-                  , D.fieldset (oneOf [ pure $ D.Class := "form-group" ]) [D.textarea
-                      ( oneOf
-                          [ pure $ D.Class := "form-control"
-                          , pure $ D.Rows := "8"
-                          , pure $ D.SelfT := \(be :: HTMLTextAreaElement) -> launchAff_ do
-                               delay (Milliseconds 0.0)
-                               liftEffect $ setBodyElt be
-                          , pure $ D.Placeholder := "Write your article (in markdown)"
-                          , pure $ D.OnFocus := (setBodyFocus $ Just unit)
-                          ]
-                      )
-                      []]
+                  , D.fieldset (oneOf [ pure $ D.Class := "form-group" ])
+                      [ D.textarea
+                          ( oneOf
+                              [ pure $ D.Class := "form-control"
+                              , pure $ D.Rows := "8"
+                              , pure $ D.SelfT := \(be :: HTMLTextAreaElement) -> launchAff_ do
+                                  delay (Milliseconds 0.0)
+                                  liftEffect $ setBodyElt be
+                              , pure $ D.Placeholder := "Write your article (in markdown)"
+                              , pure $ D.OnFocus := (setBodyFocus $ Just unit)
+                              ]
+                          )
+                          []
+                      ]
                   , textField "Enter tags" (words >>> setTags)
                   , D.button
                       ( oneOf
@@ -89,7 +92,7 @@ create user =
                                   <*> bodyElt
                                   <*> user
                               ) <#> \fields -> do
-                                txt <-value fields.bodyElt
+                                txt <- value fields.bodyElt
                                 let
                                   parsed = { title: _, description: _, body: _, tagList: _ }
                                     <$> withErrors [ "Title cannot be empty" ] fields.title

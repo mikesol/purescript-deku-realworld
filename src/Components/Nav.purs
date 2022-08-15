@@ -17,7 +17,8 @@ import Route (Route(..))
 import Type.Proxy (Proxy(..))
 
 nav_ =
-  Proxy    :: Proxy
+  Proxy
+    :: Proxy
          """<nav class="navbar navbar-light">
     <div class="container">
         <a class="navbar-brand" href="/#/">conduit</a>
@@ -25,8 +26,13 @@ nav_ =
     </div>
 </nav>"""
 
-nav :: forall s m lock payload.
-  Korok s m => Effect Unit -> AnEvent m Route -> AnEvent m AuthState -> Domable m lock payload
+nav
+  :: forall s m lock payload
+   . Korok s m
+  => Effect Unit
+  -> AnEvent m Route
+  -> AnEvent m AuthState
+  -> Domable m lock payload
 nav logOut route currentUser = nav_ ~~
   { navbar: nut
       ( D.ul (pure $ D.Class := "nav navbar-nav pull-xs-right")
