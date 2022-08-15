@@ -123,3 +123,5 @@ main = runInBody app
 ## Generic codecs
 
 PureScript has a mature routing ecosystem that most Deku apps use for their routing. This RealWorld app uses [`routing-duplex`](https://github.com/natefaubion/purescript-routing-duplex), which makes use of generic codecs to simplify routing.
+
+Because routing deals with top-level URLs, it is difficult to make a stand-alone example without accidentally routing you off of the example, so to see how this works, you can check out the [router](../src/Route.purs) and the [main function](../src/Main.purs) in the RealWorld app.
