@@ -8,7 +8,40 @@ We've already gone over how Deku uses [`Event`-s](./events.md) from [`hyrule`](h
 
 Deku callbacks, like `OnClick` and `OnFocus`, are executed in the `Effect` monad. `Effect` is similar to `IO` in Haskell and represents a computation where each computation has a synchronous side-effect, like printing to the console or retrieving information from a DOM element, that exists outside of a pure functional context.
 
-In the following example, the `Effect` monad is used to echo the contents of a `textarea` to a `div` whenever a `button` is pressed.
+In the following example, the `Effect` monad is used to echo the contents of a `textarea` to a `div` whenever a `button` is pressed. This is done using the `value` function.
+
+[Try Me](https://try.purescript.org/?github=/mikesol/purescript-deku-realworld/main/gh-examples/FP1.purs)
+```purescript
+module FP1 where
+
+import Prelude
+
+import Data.Tuple.Nested ((/\))
+import Deku.Control (text, text_)
+import Deku.Core (Nut)
+import Deku.DOM as D
+import Deku.Do (useState')
+import Deku.Do as Deku
+import Deku.Listeners (click, injectElementT)
+import Deku.Toplevel (runInBody)
+import Effect (Effect)
+import Web.HTML.HTMLTextAreaElement (value)
+
+app :: Nut
+app = Deku.do
+  setTextAreaElt /\ textAreaElt <- useState'
+  setDivText /\ divText <- useState'
+  D.div_
+    [ D.textarea (injectElementT setTextAreaElt) []
+    , D.button (click $ textAreaElt <#> (value >=> setDivText))
+        [ text_ "Echo text area text"
+        ]
+    , D.div_ [ text divText ]
+    ]
+
+main :: Effect Unit
+main = runInBody app
+```
 
 ## Applicative validators
 
@@ -18,6 +51,74 @@ Forms are ubiqutous in web programming, and Deku apps rely on standard PureScrip
 - [`purescript-simple-json`](https://github.com/justinwoo/purescript-simple-json)
 
 In the example below, the `validation` library is used to validate a form on submit.
+
+[Try Me](https://try.purescript.org/?github=/mikesol/purescript-deku-realworld/main/gh-examples/FP2.purs)
+```purescript
+module FP2 where
+
+import Prelude
+
+import Data.Either (Either(..))
+import Data.Foldable (oneOf)
+import Data.String (Pattern(..), contains)
+import Data.Tuple.Nested ((/\))
+import Data.Validation.Semigroup (V, invalid, toEither)
+import Deku.Attribute ((:=))
+import Deku.Control (blank, switcher_, text_)
+import Deku.Core (Nut)
+import Deku.DOM as D
+import Deku.Do (useState')
+import Deku.Do as Deku
+import Deku.Listeners (click, injectElementT)
+import Deku.Toplevel (runInBody)
+import Effect (Effect)
+import Web.HTML.HTMLInputElement (value)
+
+data FormState = Errors (Array String) | Success | NoMessage
+
+emailValidator  :: String -> V (Array String) String
+emailValidator s = if contains (Pattern "@") s then pure s else invalid ["E-mail must have an @"]
+urlValidator  :: String -> V (Array String) String
+urlValidator s = if contains (Pattern "://") s then pure s else invalid ["Url mmust have ://"]
+
+app :: Nut
+app = Deku.do
+  setEmailElt /\ emailElt <- useState'
+  setUrlElt /\ urlElt <- useState'
+  setMessage /\ message <- useState'
+  let
+    input placeholder cb = D.input
+      ( oneOf
+          [ pure $ D.Placeholder := placeholder
+          , injectElementT cb
+          , pure $ D.OnFocus := setMessage NoMessage
+          ]
+      )
+      []
+  D.div_
+    [ input "E-mail" setEmailElt
+    , input "URL" setUrlElt
+    , message # switcher_ D.div case _ of
+      NoMessage -> blank
+      Errors e -> D.ul_ (map (\i -> D.li (pure $ D.Style := "color: red;") [text_ i]) e)
+      Success -> D.p (pure $ D.Style := "color: green;") [text_ "Form submitted with no errors!"]
+    , D.button
+        ( oneOf
+            [ click $ ({ email: _, url: _ } <$> emailElt <*> urlElt) <#> \fields -> do
+                email <- value fields.email
+                url <- value fields.url
+                case toEither (emailValidator email *> urlValidator url) of
+                  Left a -> setMessage (Errors a)
+                  Right _ -> setMessage Success
+            ]
+        )
+        [ text_ "Submit"
+        ]
+    ]
+
+main :: Effect Unit
+main = runInBody app
+```
 
 ## Generic codecs
 
