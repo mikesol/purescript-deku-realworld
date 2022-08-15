@@ -44,7 +44,7 @@ app = Deku.do
                   ( D.div_
                       [ D.button
                           ( oneOf
-                              [ click $ pure $ setRemoveMe
+                              [ click $ pure setRemoveMe
                               , oneOf
                                   [ makeBold i $> true
                                   , makeNormal i $> false
