@@ -56,7 +56,7 @@ main = runInBody app
 
 [Try Me](https://try.purescript.org/?github=/mikesol/purescript-deku-realworld/main/gh-examples/Events2.purs)
 ```purescript
-module Events1 where
+module Events2 where
 
 import Prelude
 
