@@ -14,7 +14,7 @@ import Data.String.Utils (words)
 import Data.Tuple.Nested ((/\))
 import Data.Validation.Semigroup (V, invalid, toEither)
 import Deku.Attribute ((:=))
-import Deku.Control (blank, switcher, text_)
+import Deku.Control (blank, switcher_, text_)
 import Deku.Core (class Korok, Domable)
 import Deku.DOM as D
 import Deku.Do (useState, useState')
@@ -58,12 +58,10 @@ create user =
             setTags /\ tags <- useState []
             let errorMessages = ((title <|> description <|> (bodyFocus $> Nothing) <|> (tags $> Nothing) <|> pure Nothing) $> []) <|> errors
             D.div_
-              [ D.div_
-                  [ errorMessages # switcher case _ of
+              [ errorMessages # switcher_ D.div case _ of
                       [] -> blank
                       errs -> D.ul (oneOf [ pure $ D.Class := "error-messages" ])
                         (map (D.li_ <<< pure <<< text_) errs)
-                  ]
               , D.div_
                   [ largeTextField "Article Title" (Just >>> setTitle)
                   , textField "What's this article about?" (Just >>> setDescription)

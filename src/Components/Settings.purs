@@ -13,7 +13,7 @@ import Data.Foldable (oneOf)
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
 import Deku.Attribute ((:=))
-import Deku.Control (blank, switcher, text_)
+import Deku.Control (blank, switcher_, text_)
 import Deku.Core (class Korok, Domable)
 import Deku.DOM as D
 import Deku.Do (useState)
@@ -31,7 +31,7 @@ import Web.HTML.Location (setHref)
 import Web.HTML.Window (location)
 
 settings_ =
-  Proxy    :: Proxy
+  Proxy :: Proxy
          """<div class="settings-page">
     <div class="container page">
         <div class="row">
@@ -61,12 +61,10 @@ settings currentUser setCurrentUser = settings_ ~~
           let onCurrentUser f = f <$> currentUser
           let onCurrentUserM f = compact (f <$> currentUser)
           D.div_
-            [ D.div_
-                [ errorMessages # switcher case _ of
+            [  errorMessages # switcher_ D.div case _ of
                     [] -> blank
                     errs -> D.ul (oneOf [ pure $ D.Class := "error-messages" ])
                       (map (D.li_ <<< pure <<< text_) errs)
-                ]
             , D.div_
                 [ textFieldWithValue (onCurrentUserM _.image) "URL of profile picture" (Just >>> setProfilePictureUrl)
                 , textFieldWithValue (onCurrentUser _.username) "Your Name" (Just >>> setName)

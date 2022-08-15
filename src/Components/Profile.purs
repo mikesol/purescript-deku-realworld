@@ -10,7 +10,7 @@ import Data.Maybe (maybe)
 import Data.Tuple.Nested ((/\))
 import Date (prettyDate)
 import Deku.Attribute ((:=))
-import Deku.Control (blank, switcher, text, text_)
+import Deku.Control (blank, switcher_, text, text_)
 import Deku.Core (class Korok, Domable)
 import Deku.DOM as D
 import Deku.Do (useState)
@@ -207,9 +207,7 @@ profileLoaded
         let
           su = singleArticle currentUser
         in
-          nut $ D.div_
-            [ tab # switcher case _ of
+          nut $ tab # switcher_ D.div case _ of
                 FavoritedArticles -> D.div_ (map su favoritedArticles.articles)
                 MyArticles -> D.div_ (map su myArticles.articles)
-            ]
     }

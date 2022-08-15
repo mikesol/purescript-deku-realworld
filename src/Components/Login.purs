@@ -13,7 +13,7 @@ import Data.Maybe (Maybe(..), maybe)
 import Data.Tuple.Nested ((/\))
 import Data.Validation.Semigroup (V, invalid, toEither)
 import Deku.Attribute ((:=))
-import Deku.Control (blank, switcher, text_)
+import Deku.Control (blank, switcher_, text_)
 import Deku.Core (class Korok, Domable)
 import Deku.DOM as D
 import Deku.Do (useState)
@@ -53,12 +53,10 @@ login setCurrentUser = login_ ~~
           setPassword /\ password <- useState Nothing
           let errorMessages = ((email <|> password <|> pure Nothing) $> []) <|> errors
           D.div_
-            [ D.div_
-                [ errorMessages # switcher case _ of
-                    [] -> blank
-                    errs -> D.ul (oneOf [ pure $ D.Class := "error-messages" ])
-                      (map (D.li_ <<< pure <<< text_) errs)
-                ]
+            [ errorMessages # switcher_ D.div case _ of
+                [] -> blank
+                errs -> D.ul (oneOf [ pure $ D.Class := "error-messages" ])
+                    (map (D.li_ <<< pure <<< text_) errs)
             , D.div_
                 [ largeTextField "Email" (Just >>> setEmail)
                 , largePasswordField "Password" (Just >>> setPassword)
