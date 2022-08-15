@@ -19,14 +19,14 @@ import Deku.Core (class Korok, Domable)
 import Deku.DOM as D
 import Deku.Do (useState, useState')
 import Deku.Do as Deku
-import Deku.Listeners (click)
+import Deku.Listeners (click, injectElementT)
 import Deku.Pursx (nut, (~~))
-import Effect.Aff (Milliseconds(..), delay, launchAff_)
+import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
 import FRP.Event (AnEvent)
 import Foreign.Object (toUnfoldable)
 import Type.Proxy (Proxy(..))
-import Web.HTML (HTMLTextAreaElement, window)
+import Web.HTML (window)
 import Web.HTML.HTMLTextAreaElement (value)
 import Web.HTML.Location (setHref)
 import Web.HTML.Window (location)
@@ -71,9 +71,7 @@ create user =
                           ( oneOf
                               [ pure $ D.Class := "form-control"
                               , pure $ D.Rows := "8"
-                              , pure $ D.SelfT := \(be :: HTMLTextAreaElement) -> launchAff_ do
-                                  delay (Milliseconds 0.0)
-                                  liftEffect $ setBodyElt be
+                              , injectElementT setBodyElt
                               , pure $ D.Placeholder := "Write your article (in markdown)"
                               , pure $ D.OnFocus := (setBodyFocus $ Just unit)
                               ]

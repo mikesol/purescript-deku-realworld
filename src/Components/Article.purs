@@ -18,7 +18,7 @@ import Deku.Core (class Korok, Domable, bus, insert_, remove)
 import Deku.DOM as D
 import Deku.Do (useMemoized, useState, useState')
 import Deku.Do as Deku
-import Deku.Listeners (click)
+import Deku.Listeners (click, injectElementT)
 import Deku.Pursx (nut, (~~))
 import Effect.Aff (Milliseconds(..), delay, error, launchAff_, throwError)
 import Effect.Class (liftEffect)
@@ -235,7 +235,7 @@ articleLoaded
     , commentTextArea: nut
         ( D.textarea
             ( oneOf
-                [ pure $ D.SelfT := \e -> launchAff_ (delay (Milliseconds 0.0) *> liftEffect (setCommentTA e))
+                [ injectElementT setCommentTA
                 , pure $ D.Class := "form-control"
                 , pure $ D.Placeholder := "Write a comment..."
                 , pure $ D.Rows := "3"
