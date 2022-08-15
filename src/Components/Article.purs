@@ -7,6 +7,7 @@ import API.Types (AuthState(..), Comment, SingleArticle, isSignedIn, whenSignedI
 import Components.Favorited (doFavoriting)
 import Components.Following (followAttrs, followText)
 import Control.Alt ((<|>))
+import Data.Compactable (compact)
 import Data.Either (Either(..))
 import Data.Foldable (oneOf, oneOfMap)
 import Data.Maybe (Maybe(..), maybe)
@@ -20,7 +21,7 @@ import Deku.Do (useMemoized, useState, useState')
 import Deku.Do as Deku
 import Deku.Listeners (click, injectElementT)
 import Deku.Pursx (nut, (~~))
-import Effect.Aff (Milliseconds(..), delay, error, launchAff_, throwError)
+import Effect.Aff (error, launchAff_, throwError)
 import Effect.Class (liftEffect)
 import FRP.Dedup (dedup)
 import FRP.Event (AnEvent, keepLatest)
@@ -214,6 +215,12 @@ articleLoaded
       ]
   let favoriteText = nut (text (isFavorited <#> if _ then "Favorited" else "Favorite Post"))
   let img = pure (D.Src := image)
+  let
+    myImg = compact
+      ( currentUser <#> case _ of
+          SignedIn u -> (D.Src := _) <$> u.image
+          SignedOut -> Nothing
+      )
   let authProf = pure (D.Href := "/#/profile/" <> username)
   let authorName = nut (text_ username)
   let fCount = nut (text (show <$> favoritesCount))
@@ -221,7 +228,7 @@ articleLoaded
     { title: nut (D.h1_ [ text_ title ])
     , image1: img
     , image2: img
-    , image3: img
+    , image3: myImg
     , authProf1: authProf
     , authProf2: authProf
     , authProf3: authProf
