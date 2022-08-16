@@ -251,4 +251,4 @@ main :: Effect Unit
 main = runInBody app
 ```
 
-Outside of these patterns, Deku and this RealWorld application rely heavily on [standard functional programming conventions and standard PureScript libraries](./functional-programming).
+Outside of these patterns, Deku and this RealWorld application rely heavily on [standard functional programming conventions and standard PureScript libraries](./functional-programming.md).

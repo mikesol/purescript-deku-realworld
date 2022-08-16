@@ -18,9 +18,7 @@ import FRP.Event (fold)
 import Type.Proxy (Proxy(..))
 
 template =
-  Proxy
-    :: Proxy
-         """
+  Proxy :: Proxy """
 <div>
   <h1>A counter</h1>
   <p>Counter: ~counterTxt1~</p>

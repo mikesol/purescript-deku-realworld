@@ -13,9 +13,7 @@ import Effect (Effect)
 import Type.Proxy (Proxy(..))
 
 template =
-  Proxy
-    :: Proxy
-         """
+  Proxy :: Proxy """
 <div>
   <h1 ~h1Atts~>Hello world!</h1>
   <p><i>This is</i>~txt~</p>
