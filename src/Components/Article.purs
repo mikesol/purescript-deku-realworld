@@ -15,9 +15,9 @@ import Data.Tuple.Nested ((/\))
 import Date (prettyDate)
 import Deku.Attribute ((:=))
 import Deku.Control (dyn_, text, text_)
-import Deku.Core (class Korok, Domable, bus, insert_, remove)
+import Deku.Core (class Korok, Domable, bus, insert_)
 import Deku.DOM as D
-import Deku.Do (useMemoized, useState, useState')
+import Deku.Do (useMemoized, useRemoval, useState, useState')
 import Deku.Do as Deku
 import Deku.Listeners (click, injectElementT)
 import Deku.Pursx (nut, (~~))
@@ -273,7 +273,8 @@ articleLoaded
     , favoritesCount1: fCount
     , favoritesCount2: fCount
     , commentList: nut $ dyn_ D.div
-        ( ({ cu: _, com: _ } <$> currentUser <*> (newComment <|> oneOfMap pure comments)) <#> \{ cu, com } -> keepLatest $ bus \setDelete delete -> do
+        ( ({ cu: _, com: _ } <$> currentUser <*> (newComment <|> oneOfMap pure comments)) <#> \{ cu, com } -> Deku.do
+            setRemove /\ remove <- useRemoval
             let body = nut (text_ com.body)
             let username = nut (text_ com.author.username)
             let imgsrc = pure (D.Src := com.author.image)
@@ -281,7 +282,7 @@ articleLoaded
             let profile1 = profile
             let profile2 = profile
             let date = nut (text_ (prettyDate com.updatedAt))
-            (delete $> remove) <|>
+            remove <|>
               ( pure
                   $ insert_
                   $ maybe (theirComment_ ~~ { body, imgsrc, profile1, profile2, username, date })
@@ -289,7 +290,7 @@ articleLoaded
                           let
                             deleteAction = click $ pure do
                               launchAff_ $ deleteComment u.token slug com.id
-                              setDelete unit
+                              setRemove
 
                           myComment_ ~~ { body, imgsrc, profile1, profile2, username, date, deleteAction }
                       )
