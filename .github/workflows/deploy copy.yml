@@ -1,0 +1,29 @@
+name: Unit tests
+on: push
+jobs:
+  container-job:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [14.x]
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v2
+      - name: Cache purescript dependencies
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.npm
+            .spago
+            ${{ env.spago_global_cache }}
+            output
+          key: >-
+            ${{ hashFiles('package-lock.json') }}-
+            ${{ hashFiles('spago.dhall') }}-
+            ${{ hashFiles('packages.dhall') }}
+      - name: Install dependencies
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Test
+        run: npm t
