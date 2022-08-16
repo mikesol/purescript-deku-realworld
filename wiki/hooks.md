@@ -238,7 +238,11 @@ app = Deku.do
         )
     , page # switcher_ D.div case _ of
         A -> text_ "Page A"
-        B -> D.a (pure $ D.Href := "https://github.com/mikesol/purescript-deku") [ text_ "Page B navigates to the Deku Github Repo." ]
+        B -> D.a
+          ( pure
+              $ D.Href := "https://github.com/mikesol/purescript-deku"
+          )
+          [ text_ "Page B navigates to the Deku Github Repo." ]
         C -> D.button_ [ text_ "Page C is a button that does nothing" ]
         D -> D.div_ [ D.h1_ [ text_ "Inception!", D.div_ [ app ] ] ]
     ]
