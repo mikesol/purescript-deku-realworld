@@ -7,10 +7,9 @@ import API.Types (AuthState(..), Comment, SingleArticle, isSignedIn, whenSignedI
 import Components.Favorited (doFavoriting)
 import Components.Following (followAttrs, followText)
 import Control.Alt ((<|>))
-import Data.Compactable (compact)
 import Data.Either (Either(..))
 import Data.Foldable (oneOf, oneOfMap)
-import Data.Maybe (Maybe(..), maybe)
+import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Tuple.Nested ((/\))
 import Date (prettyDate)
 import Deku.Attribute ((:=))
@@ -25,6 +24,7 @@ import Effect.Aff (error, launchAff_, throwError)
 import Effect.Class (liftEffect)
 import FRP.Dedup (dedup)
 import FRP.Event (AnEvent)
+import Record (union)
 import Type.Proxy (Proxy(..))
 import Web.HTML.HTMLTextAreaElement (value)
 
@@ -216,10 +216,12 @@ articleLoaded
   let favoriteText = nut (text (isFavorited <#> if _ then "Favorited" else "Favorite Post"))
   let img = pure (D.Src := image)
   let
-    myImg = compact
-      ( currentUser <#> case _ of
-          SignedIn u -> (D.Src := _) <$> u.image
-          SignedOut -> Nothing
+    myImg = currentUser <#>
+      ( (D.Src := _)
+          <<< fromMaybe "https://picsum.photos/200"
+          <<< case _ of
+            SignedIn u -> u.image
+            SignedOut -> Nothing
       )
   let authProf = pure (D.Href := "/#/profile/" <> username)
   let authorName = nut (text_ username)
@@ -275,24 +277,27 @@ articleLoaded
     , commentList: nut $ dyn_ D.div
         ( ({ cu: _, com: _ } <$> currentUser <*> (newComment <|> oneOfMap pure comments)) <#> \{ cu, com } -> Deku.do
             setRemove /\ remove <- useRemoval
-            let body = nut (text_ com.body)
-            let username = nut (text_ com.author.username)
-            let imgsrc = pure (D.Src := com.author.image)
             let profile = pure (D.Href := "/#/profile/" <> com.author.username)
-            let profile1 = profile
-            let profile2 = profile
-            let date = nut (text_ (prettyDate com.updatedAt))
+            let
+              common =
+                { body: nut (text_ com.body)
+                , imgsrc: pure (D.Src := com.author.image)
+                , profile1: profile
+                , profile2: profile
+                , username: nut (text_ com.author.username)
+                , date: nut (text_ (prettyDate com.updatedAt))
+                }
             remove <|>
               ( pure
                   $ insert_
-                  $ maybe (theirComment_ ~~ { body, imgsrc, profile1, profile2, username, date })
+                  $ maybe (theirComment_ ~~ common)
                       ( \u -> do
                           let
                             deleteAction = click $ pure do
                               launchAff_ $ deleteComment u.token slug com.id
                               setRemove
 
-                          myComment_ ~~ { body, imgsrc, profile1, profile2, username, date, deleteAction }
+                          myComment_ ~~ (common `union` { deleteAction })
                       )
                       ( case cu of
                           SignedIn u

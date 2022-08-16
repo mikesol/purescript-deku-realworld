@@ -20,6 +20,7 @@
   , "maybe"
   , "media-types"
   , "prelude"
+  , "record"
   , "routing"
   , "routing-duplex"
   , "simple-json"
