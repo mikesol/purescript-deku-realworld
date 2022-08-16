@@ -13,10 +13,10 @@ import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Tuple.Nested ((/\))
 import Date (prettyDate)
 import Deku.Attribute ((:=))
-import Deku.Control (dyn_, text, text_)
-import Deku.Core (class Korok, Domable, insert_)
+import Deku.Control (ezDyn_, text, text_)
+import Deku.Core (class Korok, Domable)
 import Deku.DOM as D
-import Deku.Do (useMemoized, useRemoval, useState, useState')
+import Deku.Do (useMemoized, useState, useState')
 import Deku.Do as Deku
 import Deku.Listeners (click, injectElementT)
 import Deku.Pursx (nut, (~~))
@@ -274,37 +274,32 @@ articleLoaded
     , articleHeader: nut $ D.h2_ [ text_ title ]
     , favoritesCount1: fCount
     , favoritesCount2: fCount
-    , commentList: nut $ dyn_ D.div
-        ( ({ cu: _, com: _ } <$> currentUser <*> (newComment <|> oneOfMap pure comments)) <#> \{ cu, com } -> Deku.do
-            setRemove /\ remove <- useRemoval
-            let profile = pure (D.Href := "/#/profile/" <> com.author.username)
-            let
-              common =
-                { body: nut (text_ com.body)
-                , imgsrc: pure (D.Src := com.author.image)
-                , profile1: profile
-                , profile2: profile
-                , username: nut (text_ com.author.username)
-                , date: nut (text_ (prettyDate com.updatedAt))
-                }
-            remove <|>
-              ( pure
-                  $ insert_
-                  $ maybe (theirComment_ ~~ common)
-                      ( \u -> do
-                          let
-                            deleteAction = click $ pure do
-                              launchAff_ $ deleteComment u.token slug com.id
-                              setRemove
+    , commentList: nut $ ezDyn_ D.div $
+        ({ cu: _, com: _ } <$> currentUser <*> (newComment <|> oneOfMap pure comments)) <#> \{ cu, com } { remove } -> do
+          let profile = pure (D.Href := "/#/profile/" <> com.author.username)
+          let
+            common =
+              { body: nut (text_ com.body)
+              , imgsrc: pure (D.Src := com.author.image)
+              , profile1: profile
+              , profile2: profile
+              , username: nut (text_ com.author.username)
+              , date: nut (text_ (prettyDate com.updatedAt))
+              }
+          maybe (theirComment_ ~~ common)
+            ( \u -> do
+                let
+                  deleteAction = click $ pure do
+                    launchAff_ $ deleteComment u.token slug com.id
+                    remove
 
-                          myComment_ ~~ (common `union` { deleteAction })
-                      )
-                      ( case cu of
-                          SignedIn u
-                            | u.username == com.author.username -> Just u
-                            | otherwise -> Nothing
-                          SignedOut -> Nothing
-                      )
-              )
-        )
+                myComment_ ~~ (common `union` { deleteAction })
+            )
+            ( case cu of
+                SignedIn u
+                  | u.username == com.author.username -> Just u
+                  | otherwise -> Nothing
+                SignedOut -> Nothing
+
+            )
     }
