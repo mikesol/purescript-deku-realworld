@@ -15,7 +15,7 @@ import Data.Tuple.Nested ((/\))
 import Date (prettyDate)
 import Deku.Attribute ((:=))
 import Deku.Control (dyn_, text, text_)
-import Deku.Core (class Korok, Domable, bus, insert_)
+import Deku.Core (class Korok, Domable, insert_)
 import Deku.DOM as D
 import Deku.Do (useMemoized, useRemoval, useState, useState')
 import Deku.Do as Deku
@@ -24,7 +24,7 @@ import Deku.Pursx (nut, (~~))
 import Effect.Aff (error, launchAff_, throwError)
 import Effect.Class (liftEffect)
 import FRP.Dedup (dedup)
-import FRP.Event (AnEvent, keepLatest)
+import FRP.Event (AnEvent)
 import Type.Proxy (Proxy(..))
 import Web.HTML.HTMLTextAreaElement (value)
 
