@@ -11,6 +11,9 @@
   , "deku"
   , "effect"
   , "either"
+  , "fetch"
+  , "fetch-core"
+  , "fetch-yoga-json"
   , "filterable"
   , "foldable-traversable"
   , "foreign"
@@ -23,15 +26,16 @@
   , "record"
   , "routing"
   , "routing-duplex"
-  , "simple-json"
   , "st"
   , "stringutils"
   , "transformers"
   , "tuples"
+  , "typelevel-prelude"
   , "validation"
   , "web-dom"
   , "web-html"
   , "web-storage"
+  , "yoga-json"
   ]
 , packages = ./packages.dhall
 }
