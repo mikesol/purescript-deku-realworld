@@ -2,8 +2,6 @@
 , name = "deku-starter"
 , dependencies =
   [ "aff"
-  , "affjax"
-  , "affjax-web"
   , "arrays"
   , "bolson"
   , "control"
@@ -12,7 +10,6 @@
   , "effect"
   , "either"
   , "fetch"
-  , "fetch-core"
   , "fetch-yoga-json"
   , "filterable"
   , "foldable-traversable"

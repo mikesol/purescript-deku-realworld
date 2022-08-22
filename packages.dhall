@@ -69,7 +69,7 @@ let overrides =
           , "web-promise"
           , "web-streams"
           ]
-        , version = "v1.0.0"
+        , version = "v1.1.0"
         , repo = "https://github.com/rowtype-yoga/purescript-fetch.git"
         }
       , fetch-yoga-json =

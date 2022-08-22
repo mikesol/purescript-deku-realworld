@@ -18,11 +18,9 @@ import Type.Row.Homogeneous (class Homogeneous, class HomogeneousRowList)
 import Yoga.JSON as JSON
 
 simpleGetOrDelete'
-  :: forall r headers headersRL
+  :: forall r headers
    . JSON.ReadForeign r
-  => RowToList headers headersRL
   => Homogeneous headers String
-  => HomogeneousRowList headersRL String
   => Method
   -> { | headers }
   -> String
@@ -36,11 +34,9 @@ simpleGetOrDelete' method headers url = do
   pure response
 
 simpleGet'
-  :: forall r headers headersRL
+  :: forall r headers
    . JSON.ReadForeign r
-  => RowToList headers headersRL
   => Homogeneous headers String
-  => HomogeneousRowList headersRL String
   => { | headers }
   -> String
   -> Aff r
@@ -61,12 +57,10 @@ simpleGet :: forall r. JSON.ReadForeign r => String -> Aff r
 simpleGet = simpleGet' {}
 
 simplePostOrPut'
-  :: forall i o headers headersRL newHeaders newHeadersRL
+  :: forall i o headers newHeaders newHeadersRL
    . JSON.WriteForeign i
   => JSON.ReadForeign o
-  => RowToList headers headersRL
   => Homogeneous headers String
-  => HomogeneousRowList headersRL String
   => Union headers ("Content-Type" :: String) newHeaders
   => Nub newHeaders newHeaders
   => RowToList newHeaders newHeadersRL
@@ -105,11 +99,9 @@ simplePost' :: forall i o headers headersRL newHeaders newHeadersRL
   => { | headers } -> String -> i -> Aff (PostReturn o)
 simplePost' h u = simplePostOrPut' POST h u <<< Just
 
-simplePostNoBody' :: forall o headers headersRL newHeaders newHeadersRL
+simplePostNoBody' :: forall o headers newHeaders newHeadersRL
    . JSON.ReadForeign o
-  => RowToList headers headersRL
   => Homogeneous headers String
-  => HomogeneousRowList headersRL String
   => Union headers ("Content-Type" :: String) newHeaders
   => Nub newHeaders newHeaders
   => RowToList newHeaders newHeadersRL
@@ -117,11 +109,9 @@ simplePostNoBody' :: forall o headers headersRL newHeaders newHeadersRL
   => { | headers } -> String -> Aff (PostReturn o)
 simplePostNoBody' h u = simplePostOrPut' POST h u (Nothing :: Maybe {})
 
-simplePut' :: forall i o headers headersRL newHeaders newHeadersRL. JSON.WriteForeign i
+simplePut' :: forall i o headers newHeaders newHeadersRL. JSON.WriteForeign i
   => JSON.ReadForeign o
-  => RowToList headers headersRL
   => Homogeneous headers String
-  => HomogeneousRowList headersRL String
   => Union headers ("Content-Type" :: String) newHeaders
   => Nub newHeaders newHeaders
   => RowToList newHeaders newHeadersRL
