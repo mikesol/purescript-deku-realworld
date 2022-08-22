@@ -57,14 +57,12 @@ simpleGet :: forall r. JSON.ReadForeign r => String -> Aff r
 simpleGet = simpleGet' {}
 
 simplePostOrPut'
-  :: forall i o headers newHeaders newHeadersRL
+  :: forall i o headers newHeaders
    . JSON.WriteForeign i
   => JSON.ReadForeign o
-  => Homogeneous headers String
+  => Homogeneous newHeaders String
   => Union headers ("Content-Type" :: String) newHeaders
   => Nub newHeaders newHeaders
-  => RowToList newHeaders newHeadersRL
-  => HomogeneousRowList newHeadersRL String
   => Method
   -> { | headers }
   -> String
@@ -86,12 +84,9 @@ simplePostOrPut' method headers url payload = do
       Right (r :: Errors) -> pure (Left r)
       Left e -> throwError $ error $ "Can't parse JSON. " <> show e
 
-simplePost' :: forall i o headers headersRL newHeaders newHeadersRL
+simplePost' :: forall i o headers newHeaders newHeadersRL
    . JSON.WriteForeign i
   => JSON.ReadForeign o
-  => RowToList headers headersRL
-  => Homogeneous headers String
-  => HomogeneousRowList headersRL String
   => Union headers ("Content-Type" :: String) newHeaders
   => Nub newHeaders newHeaders
   => RowToList newHeaders newHeadersRL
@@ -101,7 +96,6 @@ simplePost' h u = simplePostOrPut' POST h u <<< Just
 
 simplePostNoBody' :: forall o headers newHeaders newHeadersRL
    . JSON.ReadForeign o
-  => Homogeneous headers String
   => Union headers ("Content-Type" :: String) newHeaders
   => Nub newHeaders newHeaders
   => RowToList newHeaders newHeadersRL
@@ -111,7 +105,6 @@ simplePostNoBody' h u = simplePostOrPut' POST h u (Nothing :: Maybe {})
 
 simplePut' :: forall i o headers newHeaders newHeadersRL. JSON.WriteForeign i
   => JSON.ReadForeign o
-  => Homogeneous headers String
   => Union headers ("Content-Type" :: String) newHeaders
   => Nub newHeaders newHeaders
   => RowToList newHeaders newHeadersRL
