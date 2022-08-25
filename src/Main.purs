@@ -27,7 +27,7 @@ import FRP.Event as Event
 import Route (route, Route(..))
 import Routing.Duplex (parse)
 import Routing.Hash (matchesWith)
-import Simple.JSON as JSON
+import Yoga.JSON as JSON
 import Web.HTML (window)
 import Web.HTML.Window (localStorage)
 import Web.Storage.Storage (getItem, removeItem, setItem)
