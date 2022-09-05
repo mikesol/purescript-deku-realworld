@@ -14,7 +14,7 @@ import Data.Tuple.Nested ((/\))
 import Data.Validation.Semigroup (V, invalid, toEither)
 import Deku.Attribute ((:=))
 import Deku.Control (blank, switcher_, text_)
-import Deku.Core (class Korok, Domable)
+import Deku.Core (Domable)
 import Deku.DOM as D
 import Deku.Do (useState)
 import Deku.Do as Deku
@@ -45,7 +45,7 @@ login_ =
     </div>
 </div>"""
 
-login :: forall s m lock payload. Korok s m => (User -> Effect Unit) -> Domable m lock payload
+login :: forall lock payload. (User -> Effect Unit) -> Domable lock payload
 login setCurrentUser = login_ ~~
   { formMatter: nut
       ( Deku.do

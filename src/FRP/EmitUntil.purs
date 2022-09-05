@@ -2,23 +2,20 @@ module FRP.EmitUntil where
 
 import Prelude
 
-import Control.Monad.ST.Class (class MonadST, liftST)
+import Control.Monad.ST.Class (liftST)
 import Control.Monad.ST.Internal as Ref
-import Data.Compactable (compact)
 import Data.Maybe (Maybe(..))
-import Data.Tuple.Nested ((/\))
-import FRP.Event (AnEvent, makeEvent, mapAccum, subscribe)
+import FRP.Event (Event, makeLemmingEvent)
 
 emitUntil
-  :: forall s m a b
-   . MonadST s m
-  => (a -> Maybe b)
-  -> AnEvent m a
-  -> AnEvent m b
-emitUntil aToB e = makeEvent \k -> do
+  :: forall a b
+   . (a -> Maybe b)
+  -> Event a
+  -> Event b
+emitUntil aToB e = makeLemmingEvent \sub k -> do
   r <- liftST $ Ref.new true
   u <- liftST $ Ref.new (pure unit)
-  usu <- subscribe e \n -> do
+  usu <- sub e \n -> do
     l <- liftST $ Ref.read r
     when l $ do
       case aToB n of

@@ -14,7 +14,7 @@ import Data.Tuple.Nested ((/\))
 import Date (prettyDate)
 import Deku.Attribute ((:=))
 import Deku.Control (ezDyn_, text, text_)
-import Deku.Core (class Korok, Domable)
+import Deku.Core (Domable)
 import Deku.DOM as D
 import Deku.Do (useMemoized, useState, useState')
 import Deku.Do as Deku
@@ -23,7 +23,7 @@ import Deku.Pursx (nut, (~~))
 import Effect.Aff (error, launchAff_, throwError)
 import Effect.Class (liftEffect)
 import FRP.Dedup (dedup)
-import FRP.Event (AnEvent)
+import FRP.Event (Event)
 import Record (union)
 import Type.Proxy (Proxy(..))
 import Web.HTML.HTMLTextAreaElement (value)
@@ -177,11 +177,11 @@ article_ =
 </div>
 """
 
-article :: forall s m lock payload. Korok s m => AnEvent m AuthState -> ArticleStatus -> Domable m lock payload
+article :: forall lock payload. Event AuthState -> ArticleStatus -> Domable lock payload
 article e (ArticleLoaded a cmt) = articleLoaded e a cmt
 article _ ArticleLoading = articleLoading_ ~~ {}
 
-articleLoaded :: forall s m lock payload. Korok s m => AnEvent m AuthState -> SingleArticle -> Array Comment -> Domable m lock payload
+articleLoaded :: forall lock payload. Event AuthState -> SingleArticle -> Array Comment -> Domable lock payload
 articleLoaded
   currentUser
   { article:

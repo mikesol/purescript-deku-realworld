@@ -11,7 +11,7 @@ import Data.Tuple.Nested ((/\))
 import Date (prettyDate)
 import Deku.Attribute ((:=))
 import Deku.Control (blank, switcher_, text, text_)
-import Deku.Core (class Korok, Domable)
+import Deku.Core (Domable)
 import Deku.DOM as D
 import Deku.Do (useState, useState')
 import Deku.Do as Deku
@@ -19,13 +19,13 @@ import Deku.Listeners (click)
 import Deku.Pursx (nut, (~~))
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
-import FRP.Event (AnEvent, Event, fromEvent)
+import FRP.Event (Event)
 import Type.Proxy (Proxy(..))
 
 data ArticleLoadStatus = ArticlesLoading | ArticlesLoaded MultipleArticles
 data TagsLoadStatus = TagsLoading | TagsLoaded { tags :: Array String }
 
-articlePreview :: forall s m lock payload. Korok s m => AnEvent m AuthState -> Article -> Domable m lock payload
+articlePreview :: forall lock payload. Event AuthState -> Article -> Domable lock payload
 articlePreview
   currentUser
   { updatedAt
@@ -151,18 +151,18 @@ home_ =
 
 data Tab = Global | Feed
 
-home :: forall s m lock payload. Korok s m => Event AuthState -> Event ArticleLoadStatus -> Event TagsLoadStatus -> Domable m lock payload
+home :: forall lock payload. Event AuthState -> Event ArticleLoadStatus -> Event TagsLoadStatus -> Domable lock payload
 home currentUser articleLoadStatus tagsLoadStatus = Deku.do
   setArticles /\ articles <- useState'
   setTab /\ tab <- useState Global
   home_ ~~
     { articlePreviews: nut
-        ( (fromEvent articleLoadStatus <|> articles) # switcher_ D.div case _ of
+        ( (articleLoadStatus <|> articles) # switcher_ D.div case _ of
             ArticlesLoading -> loading
-            ArticlesLoaded a -> D.div_ (map (articlePreview (fromEvent currentUser)) a.articles)
+            ArticlesLoaded a -> D.div_ (map (articlePreview currentUser) a.articles)
         )
     , feedAttributes: oneOf
-        [ { cu: _, ct: _ } <$> (fromEvent currentUser) <*> tab <#> \{ cu, ct } -> D.Class := "nav-link"
+        [ { cu: _, ct: _ } <$> currentUser <*> tab <#> \{ cu, ct } -> D.Class := "nav-link"
             <>
               ( case cu of
                   SignedIn _ -> ""
@@ -173,10 +173,10 @@ home currentUser articleLoadStatus tagsLoadStatus = Deku.do
                   Feed -> " active"
                   Global -> ""
               )
-        , fromEvent currentUser <#> \cu -> D.Style := case cu of
+        , currentUser <#> \cu -> D.Style := case cu of
             SignedOut -> ""
             SignedIn _ -> "cursor: pointer;"
-        , click $ fromEvent currentUser <#> case _ of
+        , click $ currentUser <#> case _ of
             SignedOut -> pure unit
             SignedIn cu -> setArticles ArticlesLoading *> launchAff_
               do
@@ -194,7 +194,7 @@ home currentUser articleLoadStatus tagsLoadStatus = Deku.do
               getArticles >>= liftEffect <<< setArticles <<< ArticlesLoaded
         ]
     , tags: nut
-        ( fromEvent tagsLoadStatus # switcher_ D.div case _ of
+        ( tagsLoadStatus # switcher_ D.div case _ of
             TagsLoading -> blank
             TagsLoaded tags -> D.div (oneOf [ pure $ D.Class := "tag-list" ])
               ( map
@@ -214,5 +214,5 @@ home currentUser articleLoadStatus tagsLoadStatus = Deku.do
         )
     }
   where
-  loading :: Domable m lock payload
+  loading :: Domable lock payload
   loading = articlesLoading_ ~~ {}

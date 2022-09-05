@@ -15,7 +15,7 @@ import Data.Tuple.Nested ((/\))
 import Data.Validation.Semigroup (V, invalid, toEither)
 import Deku.Attribute ((:=))
 import Deku.Control (blank, switcher_, text_)
-import Deku.Core (class Korok, Domable)
+import Deku.Core (Domable)
 import Deku.DOM as D
 import Deku.Do (useState, useState')
 import Deku.Do as Deku
@@ -23,7 +23,7 @@ import Deku.Listeners (click, injectElementT)
 import Deku.Pursx (nut, (~~))
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
-import FRP.Event (AnEvent)
+import FRP.Event (Event)
 import Foreign.Object (toUnfoldable)
 import Type.Proxy (Proxy(..))
 import Web.HTML (window)
@@ -46,7 +46,7 @@ create_ =
             </div>
 """
 
-create :: forall s m lock payload. Korok s m => AnEvent m User -> Domable m lock payload
+create :: forall lock payload. Event User -> Domable lock payload
 create user =
   create_ ~~
     { formMatter: nut

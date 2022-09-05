@@ -5,21 +5,20 @@ import Prelude
 import Control.Plus (empty)
 import Data.Foldable (oneOf)
 import Deku.Attribute ((:=))
-import Deku.Core (class Korok, Domable)
+import Deku.Core (Domable)
 import Deku.DOM as D
 import Deku.Listeners (textInput)
 import Effect (Effect)
-import FRP.Event (AnEvent)
+import FRP.Event (Event)
 
 fieldset
-  :: forall s m lock payload
-   . Korok s m
-  => Boolean
+  :: forall lock payload
+   . Boolean
   -> Boolean
-  -> AnEvent m String
+  -> Event String
   -> String
   -> (String -> Effect Unit)
-  -> Domable m lock payload
+  -> Domable lock payload
 fieldset isLg isPw value placeholder pusher = D.fieldset (oneOf [ pure $ D.Class := "form-group" ])
   [ D.input
       ( oneOf
@@ -34,51 +33,45 @@ fieldset isLg isPw value placeholder pusher = D.fieldset (oneOf [ pure $ D.Class
   ]
 
 largeTextFieldWithValue
-  :: forall s m lock payload
-   . Korok s m
-  => AnEvent m String
+  :: forall lock payload
+   . Event String
   -> String
   -> (String -> Effect Unit)
-  -> Domable m lock payload
+  -> Domable lock payload
 largeTextFieldWithValue = fieldset true false
 
 textFieldWithValue
-  :: forall s m lock payload
-   . Korok s m
-  => AnEvent m String
+  :: forall lock payload
+   . Event String
   -> String
   -> (String -> Effect Unit)
-  -> Domable m lock payload
+  -> Domable lock payload
 textFieldWithValue = fieldset false false
 
 textField
-  :: forall s m lock payload
-   . Korok s m
-  => String
+  :: forall lock payload
+   . String
   -> (String -> Effect Unit)
-  -> Domable m lock payload
+  -> Domable lock payload
 textField = fieldset false false empty
 
 largeTextField
-  :: forall s m lock payload
-   . Korok s m
-  => String
+  :: forall lock payload
+   . String
   -> (String -> Effect Unit)
-  -> Domable m lock payload
+  -> Domable lock payload
 largeTextField = fieldset true false empty
 
 passwordField
-  :: forall s m lock payload
-   . Korok s m
-  => String
+  :: forall lock payload
+   . String
   -> (String -> Effect Unit)
-  -> Domable m lock payload
+  -> Domable lock payload
 passwordField = fieldset false true empty
 
 largePasswordField
-  :: forall s m lock payload
-   . Korok s m
-  => String
+  :: forall lock payload
+   . String
   -> (String -> Effect Unit)
-  -> Domable m lock payload
+  -> Domable lock payload
 largePasswordField = fieldset true true empty

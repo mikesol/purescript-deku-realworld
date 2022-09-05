@@ -11,13 +11,13 @@ import Data.Tuple.Nested ((/\))
 import Date (prettyDate)
 import Deku.Attribute ((:=))
 import Deku.Control (blank, switcher_, text, text_)
-import Deku.Core (class Korok, Domable)
+import Deku.Core (Domable)
 import Deku.DOM as D
 import Deku.Do (useState)
 import Deku.Do as Deku
 import Deku.Listeners (click)
 import Deku.Pursx (nut, (~~))
-import FRP.Event (AnEvent)
+import FRP.Event (Event)
 import Type.Proxy (Proxy(..))
 
 data ProfileStatus = ProfileLoading | ProfileLoaded SingleProfile MultipleArticles MultipleArticles
@@ -50,7 +50,7 @@ singleArticle_ =
     </a>
 </div>"""
 
-singleArticle :: forall s m lock payload. Korok s m => AnEvent m AuthState -> Article -> Domable m lock payload
+singleArticle :: forall lock payload. Event AuthState -> Article -> Domable lock payload
 singleArticle
   currentUser
   { updatedAt
@@ -165,13 +165,13 @@ profileLoading_ =
                     </div>
 """
 
-profile :: forall s m lock payload. Korok s m => AnEvent m AuthState -> ProfileStatus -> Domable m lock payload
+profile :: forall lock payload. Event AuthState -> ProfileStatus -> Domable lock payload
 profile e (ProfileLoaded a b c) = profileLoaded e a b c
 profile _ ProfileLoading = profileLoading_ ~~ {}
 
 data Tab = MyArticles | FavoritedArticles
 
-profileLoaded :: forall s m lock payload. Korok s m => AnEvent m AuthState -> SingleProfile -> MultipleArticles -> MultipleArticles -> Domable m lock payload
+profileLoaded :: forall lock payload. Event AuthState -> SingleProfile -> MultipleArticles -> MultipleArticles -> Domable lock payload
 profileLoaded
   currentUser
   { profile:

@@ -14,7 +14,7 @@ import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
 import Deku.Attribute ((:=))
 import Deku.Control (blank, switcher_, text_)
-import Deku.Core (class Korok, Domable)
+import Deku.Core (Domable)
 import Deku.DOM as D
 import Deku.Do (useState)
 import Deku.Do as Deku
@@ -23,7 +23,7 @@ import Deku.Pursx (nut, (~~))
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
-import FRP.Event (AnEvent)
+import FRP.Event (Event)
 import Foreign.Object (toUnfoldable)
 import Type.Proxy (Proxy(..))
 import Web.HTML (window)
@@ -48,7 +48,7 @@ settings_ =
     </div>
 </div>"""
 
-settings :: forall s m lock payload. Korok s m => AnEvent m User -> (User -> Effect Unit) -> Domable m lock payload
+settings :: forall lock payload. Event User -> (User -> Effect Unit) -> Domable lock payload
 settings currentUser setCurrentUser = settings_ ~~
   { formMatter: nut
       ( Deku.do

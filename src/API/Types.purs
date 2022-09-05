@@ -4,7 +4,7 @@ import Prelude
 
 import Data.Filterable (filterMap)
 import Data.Maybe (Maybe(..))
-import FRP.Event (AnEvent)
+import FRP.Event (Event)
 
 type User =
   { email :: String
@@ -111,7 +111,7 @@ maybeToAuthState :: Maybe User -> AuthState
 maybeToAuthState Nothing = SignedOut
 maybeToAuthState (Just user) = SignedIn user
 
-mostRecentCurrentUser :: forall m. Applicative m => AnEvent m AuthState -> AnEvent m User
+mostRecentCurrentUser :: Event AuthState -> Event User
 mostRecentCurrentUser = filterMap case _ of
   SignedIn user -> Just user
   SignedOut -> Nothing
