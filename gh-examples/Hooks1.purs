@@ -34,7 +34,7 @@ app = Deku.do
   setColor /\ color <- useState "blue"
   template ~~
     { h1Atts: oneOf
-        [ color <#> \c -> D.Style := "style=\"color:" <> c <> ";\""
+        [ color <#> \c -> D.Style := "color:" <> c <> ";"
         , pure $ D.Id := "my-h1"
         ]
     , counterTxt: nut (D.span_ [ text (fold (const (add 1)) counter (-1) <#> show) ])
