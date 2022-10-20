@@ -59,7 +59,7 @@ template =
 app :: Nut
 app = template ~~
   { h1Atts: oneOf
-      [ pure $ D.Style := "style=\"color:blue;\""
+      [ pure $ D.Style := "color:blue;"
       , pure $ D.Id := "my-h1"
       ]
   , txt: nut (D.span_ [ text_ " some html." ])
