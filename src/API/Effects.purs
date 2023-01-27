@@ -3,78 +3,117 @@ module API.Effects where
 import Prelude
 
 import API.Types (Comment, CreateArticle, MultipleArticles, MultipleComments, Profile, RegistrationRequest, RegistrationResponse, SignInRequest, SignInResponse, SingleProfile, UpdateUserRequest, SingleArticle)
-import Affjax.RequestBody as RequestFormat
-import Affjax.RequestHeader (RequestHeader(..))
-import Affjax.ResponseFormat as ResponseFormat
-import Affjax.Web (defaultRequest, printError, request)
 import Data.Either (Either(..))
 import Data.HTTP.Method (Method(..))
 import Data.Maybe (Maybe(..))
-import Data.MediaType.Common (applicationJSON)
 import Effect.Aff (Aff, error, throwError)
+import Fetch as Fetch
+import Fetch.Yoga.Json as FetchYoga
 import Foreign (Foreign)
 import Foreign.Object (Object)
-import Simple.JSON as JSON
+import Prim.Row (class Nub, class Union)
+import Prim.RowList (class RowToList)
+import Record (merge)
+import Type.Row.Homogeneous (class Homogeneous, class HomogeneousRowList)
+import Yoga.JSON as JSON
 
-simpleGetOrDelete' :: forall r. JSON.ReadForeign r => Method -> Array RequestHeader -> String -> Aff r
+simpleGetOrDelete'
+  :: forall r headers
+   . JSON.ReadForeign r
+  => Homogeneous headers String
+  => Method
+  -> { | headers }
+  -> String
+  -> Aff r
 simpleGetOrDelete' method headers url = do
-  res <- request
-    ( defaultRequest
-        { responseFormat = ResponseFormat.string
-        , method = Left method
-        , url = url
-        , headers = headers
-        }
-    )
-  case res of
-    Left err -> do
-      throwError $ error $ "GET /api response failed to decode: " <> printError err
-    Right response -> do
-      case JSON.readJSON response.body of
-        Right (r :: r) -> pure r
-        Left e -> do
-          throwError $ error $ "Can't parse JSON. " <> show e
+  { json } <- Fetch.fetch url
+    { method
+    , headers
+    }
+  response :: r <- FetchYoga.fromJSON json
+  pure response
 
-simpleGet' :: forall r. JSON.ReadForeign r => Array RequestHeader -> String -> Aff r
+simpleGet'
+  :: forall r headers
+   . JSON.ReadForeign r
+  => Homogeneous headers String
+  => { | headers }
+  -> String
+  -> Aff r
 simpleGet' = simpleGetOrDelete' GET
 
-simpleDelete' :: forall r. JSON.ReadForeign r => Array RequestHeader -> String -> Aff r
+simpleDelete'
+  :: forall r headers headersRL
+   . JSON.ReadForeign r
+  => RowToList headers headersRL
+  => Homogeneous headers String
+  => HomogeneousRowList headersRL String
+  => { | headers }
+  -> String
+  -> Aff r
 simpleDelete' = simpleGetOrDelete' DELETE
 
 simpleGet :: forall r. JSON.ReadForeign r => String -> Aff r
-simpleGet = simpleGet' []
+simpleGet = simpleGet' {}
 
-simplePostOrPut' :: forall i o. JSON.WriteForeign i => JSON.ReadForeign o => Method -> Array RequestHeader -> String -> Maybe i -> Aff (PostReturn o)
+simplePostOrPut'
+  :: forall i o headers newHeaders
+   . JSON.WriteForeign i
+  => JSON.ReadForeign o
+  => Homogeneous newHeaders String
+  => Union headers ("Content-Type" :: String) newHeaders
+  => Nub newHeaders newHeaders
+  => Method
+  -> { | headers }
+  -> String
+  -> Maybe i
+  -> Aff (PostReturn o)
 simplePostOrPut' method headers url payload = do
-  res <- request
-    ( defaultRequest
-        { content = map (RequestFormat.string <<< JSON.writeJSON) payload
-        , responseFormat = ResponseFormat.string
-        , method = Left method
-        , url = url
-        , headers = [ ContentType applicationJSON ] <> headers
-        }
-    )
-  case res of
-    Left e -> throwError (error (printError e))
-    Right r ->
-      case JSON.readJSON r.body of
-        Right (r :: o) -> pure (Right r)
-        Left e -> case JSON.readJSON r.body of
-          Right (r :: Errors) -> pure (Left r)
-          Left e -> throwError $ error $ "Can't parse JSON. " <> show e
+  let
+    newHeaders :: { | newHeaders }
+    newHeaders = merge headers { "Content-Type": "application/json" }
+  { text } <- Fetch.fetch url
+    { body: JSON.writeJSON payload
+    , method
+    , headers: newHeaders
+    }
+  body <- text
+  case JSON.readJSON body of
+    Right (r :: o) -> pure (Right r)
+    Left e -> case JSON.readJSON body of
+      Right (r :: Errors) -> pure (Left r)
+      Left e -> throwError $ error $ "Can't parse JSON. " <> show e
 
-simplePost' :: forall i o. JSON.WriteForeign i => JSON.ReadForeign o => Array RequestHeader -> String -> i -> Aff (PostReturn o)
+simplePost' :: forall i o headers newHeaders newHeadersRL
+   . JSON.WriteForeign i
+  => JSON.ReadForeign o
+  => Union headers ("Content-Type" :: String) newHeaders
+  => Nub newHeaders newHeaders
+  => RowToList newHeaders newHeadersRL
+  => HomogeneousRowList newHeadersRL String
+  => { | headers } -> String -> i -> Aff (PostReturn o)
 simplePost' h u = simplePostOrPut' POST h u <<< Just
 
-simplePostNoBody' :: forall o. JSON.ReadForeign o => Array RequestHeader -> String -> Aff (PostReturn o)
+simplePostNoBody' :: forall o headers newHeaders newHeadersRL
+   . JSON.ReadForeign o
+  => Union headers ("Content-Type" :: String) newHeaders
+  => Nub newHeaders newHeaders
+  => RowToList newHeaders newHeadersRL
+  => HomogeneousRowList newHeadersRL String
+  => { | headers } -> String -> Aff (PostReturn o)
 simplePostNoBody' h u = simplePostOrPut' POST h u (Nothing :: Maybe {})
 
-simplePut' :: forall i o. JSON.WriteForeign i => JSON.ReadForeign o => Array RequestHeader -> String -> i -> Aff (PostReturn o)
+simplePut' :: forall i o headers newHeaders newHeadersRL. JSON.WriteForeign i
+  => JSON.ReadForeign o
+  => Union headers ("Content-Type" :: String) newHeaders
+  => Nub newHeaders newHeaders
+  => RowToList newHeaders newHeadersRL
+  => HomogeneousRowList newHeadersRL String
+  => { | headers } -> String -> i -> Aff (PostReturn o)
 simplePut' h u = simplePostOrPut' PUT h u <<< Just
 
 simplePost :: forall i o. JSON.WriteForeign i => JSON.ReadForeign o => String -> i -> Aff (PostReturn o)
-simplePost u = simplePost' [] u <<< Just
+simplePost u = simplePost' {} u <<< Just
 
 type Errors = { errors :: Object (Array String) }
 type PostReturn a = Either Errors a
@@ -83,7 +122,7 @@ getArticles :: Aff MultipleArticles
 getArticles = simpleGet "https://api.realworld.io/api/articles"
 
 getArticleFeed :: String -> Aff MultipleArticles
-getArticleFeed token = simpleGet' [ RequestHeader "Authorization" ("Token " <> token) ] "https://api.realworld.io/api/articles/feed"
+getArticleFeed token = simpleGet' { "Authorization": "Token " <> token } "https://api.realworld.io/api/articles/feed"
 
 getArticlesWithTag :: String -> Aff MultipleArticles
 getArticlesWithTag tag = simpleGet $ "https://api.realworld.io/api/articles?tag=" <> tag
@@ -107,33 +146,33 @@ logIn :: SignInRequest -> Aff (PostReturn SignInResponse)
 logIn payload = simplePost "https://api.realworld.io/api/users/login" payload
 
 updateUser :: String -> UpdateUserRequest -> Aff (PostReturn SignInResponse)
-updateUser token payload = simplePut' [ RequestHeader "Authorization" ("Token " <> token) ] "https://api.realworld.io/api/user" payload
+updateUser token payload = simplePut' { "Authorization": "Token " <> token } "https://api.realworld.io/api/user" payload
 
 follow :: String -> String -> Aff (PostReturn { profile :: Profile })
-follow token user = simplePostNoBody' [ RequestHeader "Authorization" ("Token " <> token) ] ("https://api.realworld.io/api/profiles/" <> user <> "/follow")
+follow token user = simplePostNoBody' { "Authorization": "Token " <> token } ("https://api.realworld.io/api/profiles/" <> user <> "/follow")
 
 unfollow :: String -> String -> Aff { profile :: Profile }
-unfollow token user = simpleDelete' [ RequestHeader "Authorization" ("Token " <> token) ] ("https://api.realworld.io/api/profiles/" <> user <> "/follow")
+unfollow token user = simpleDelete' { "Authorization": "Token " <> token } ("https://api.realworld.io/api/profiles/" <> user <> "/follow")
 
 favorite :: String -> String -> Aff (PostReturn SingleArticle)
-favorite token slug = simplePostNoBody' [ RequestHeader "Authorization" ("Token " <> token) ] ("https://api.realworld.io/api/articles/" <> slug <> "/favorite")
+favorite token slug = simplePostNoBody' { "Authorization": "Token " <> token } ("https://api.realworld.io/api/articles/" <> slug <> "/favorite")
 
 unfavorite :: String -> String -> Aff SingleArticle
-unfavorite token slug = simpleDelete' [ RequestHeader "Authorization" ("Token " <> token) ] ("https://api.realworld.io/api/articles/" <> slug <> "/favorite")
+unfavorite token slug = simpleDelete' { "Authorization": "Token " <> token } ("https://api.realworld.io/api/articles/" <> slug <> "/favorite")
 
 comments :: String -> Aff MultipleComments
 comments slug = simpleGet ("https://api.realworld.io/api/articles/" <> slug <> "/comments")
 
-addComment :: String -> String -> String -> Aff (PostReturn { comment :: Comment})
-addComment token slug body = simplePost' [ RequestHeader "Authorization" ("Token " <> token) ] ("https://api.realworld.io/api/articles/" <> slug <> "/comments") { comment: { body } }
+addComment :: String -> String -> String -> Aff (PostReturn { comment :: Comment })
+addComment token slug body = simplePost' { "Authorization": "Token " <> token } ("https://api.realworld.io/api/articles/" <> slug <> "/comments") { comment: { body } }
 
 deleteComment :: String -> String -> Int -> Aff Unit
 deleteComment token slug id = do
-  _ :: Foreign <- simpleDelete' [ RequestHeader "Authorization" ("Token " <> token) ] ("https://api.realworld.io/api/articles/" <> slug <> "/comments/" <> show id)
+  _ :: Foreign <- simpleDelete' { "Authorization": "Token " <> token } ("https://api.realworld.io/api/articles/" <> slug <> "/comments/" <> show id)
   pure unit
 
 getProfile :: String -> Aff SingleProfile
 getProfile username = simpleGet ("https://api.realworld.io/api/profiles/" <> username)
 
 createArticle :: String -> CreateArticle -> Aff (PostReturn SingleArticle)
-createArticle token = simplePost' [ RequestHeader "Authorization" ("Token " <> token) ] ("https://api.realworld.io/api/articles")
+createArticle token = simplePost' { "Authorization": "Token " <> token } ("https://api.realworld.io/api/articles")
