@@ -7,9 +7,9 @@ import API.Types (AuthState, isSignedIn, whenSignedIn)
 import Data.Foldable (oneOf)
 import Deku.Attribute (Attribute, (:=))
 import Deku.Control (text)
+import Deku.Core (Domable, fixed)
 import Deku.DOM as D
 import Deku.Listeners (click)
-import Deku.Pursx (PursxElement, nut)
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import FRP.Event (Event)
@@ -33,5 +33,5 @@ followAttrs username currentUser isFollowing setFollowing = oneOf
             void $ follow cu'.token username
   ]
 
-followText :: forall lock payload. Event Boolean -> PursxElement lock payload
-followText isFollowing = nut (text (isFollowing <#> if _ then "Following" else "Follow"))
+followText :: forall lock payload. Event Boolean -> Domable lock payload
+followText isFollowing = fixed [text (isFollowing <#> if _ then "Following" else "Follow")]

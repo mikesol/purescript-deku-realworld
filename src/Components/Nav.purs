@@ -6,10 +6,10 @@ import API.Types (AuthState, isSignedIn, isSignedOut)
 import Data.Foldable (oneOf)
 import Deku.Attribute (Attribute, (:=))
 import Deku.Control (text_)
-import Deku.Core (Domable)
+import Deku.Core (Domable, fixed)
 import Deku.DOM as D
 import Deku.Listeners (click)
-import Deku.Pursx (nut, (~~))
+import Deku.Pursx ((~~))
 import Effect (Effect)
 import FRP.Dedup (dedup)
 import FRP.Event (Event)
@@ -33,8 +33,8 @@ nav
   -> Event AuthState
   -> Domable lock payload
 nav logOut route currentUser = nav_ ~~
-  { navbar: nut
-      ( D.ul (pure $ D.Class := "nav navbar-nav pull-xs-right")
+  { navbar: fixed
+      [ D.ul (pure $ D.Class := "nav navbar-nav pull-xs-right")
           [ navItem Home "/#/" "Home" "nav-home" (pure true)
           , navItem Editor "/#/editor" "Editor" "nav-editor" (isSignedIn <$> currentUser)
           , navItem Settings "/#/settings" "Settings" "nav-settings" (isSignedIn <$> currentUser)
@@ -56,7 +56,7 @@ nav logOut route currentUser = nav_ ~~
                   [ text_ "Log out" ]
               ]
           ]
-      )
+      ]
   }
   where
 

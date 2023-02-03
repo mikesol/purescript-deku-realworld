@@ -10,13 +10,13 @@ import Data.Foldable (oneOf)
 import Data.Tuple.Nested ((/\))
 import Date (prettyDate)
 import Deku.Attribute ((:=))
-import Deku.Control (blank, switcher_, text, text_)
-import Deku.Core (Domable)
+import Deku.Control (blank, text, text_, (<#~>))
+import Deku.Core (Domable, fixed)
 import Deku.DOM as D
-import Deku.Do (useState, useState')
 import Deku.Do as Deku
+import Deku.Hooks (useState, useState')
 import Deku.Listeners (click)
-import Deku.Pursx (nut, (~~))
+import Deku.Pursx ((~~))
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
 import FRP.Event (Event)
@@ -38,7 +38,7 @@ articlePreview
   } = Deku.do
   setFavoritesCount /\ favoritesCount <- useState fcount
   setFavorited /\ isFavorited <- useState favorited
-  let fc = nut (text (show <$> favoritesCount))
+  let fc = fixed [text (show <$> favoritesCount)]
   let
     signedOutButton = oneOf
       [ pure $ D.Class := "text-success btn-sm pull-xs-right"
@@ -61,10 +61,10 @@ articlePreview
     , signedOutButton
     , signedInButton
     , href: pure (D.Href := "/#/article/" <> slug)
-    , username: nut (text_ username)
-    , title: nut (D.h1_ [ text_ title ])
-    , description: nut (D.p_ [ text_ description ])
-    , date: nut (text_ (prettyDate updatedAt))
+    , username: fixed [text_ username]
+    , title: fixed [D.h1_ [ text_ title ]]
+    , description: fixed [D.p_ [ text_ description ]]
+    , date: fixed [text_ (prettyDate updatedAt)]
     , favoritesCount1: fc
     , favoritesCount2: fc
     }
@@ -156,11 +156,11 @@ home currentUser articleLoadStatus tagsLoadStatus = Deku.do
   setArticles /\ articles <- useState'
   setTab /\ tab <- useState Global
   home_ ~~
-    { articlePreviews: nut
-        ( (articleLoadStatus <|> articles) # switcher_ D.div case _ of
+    { articlePreviews: fixed
+        [  D.div_ [(articleLoadStatus <|> articles) <#~> case _ of
             ArticlesLoading -> loading
-            ArticlesLoaded a -> D.div_ (map (articlePreview currentUser) a.articles)
-        )
+            ArticlesLoaded a -> D.div_ (map (articlePreview currentUser) a.articles)]
+        ]
     , feedAttributes: oneOf
         [ { cu: _, ct: _ } <$> currentUser <*> tab <#> \{ cu, ct } -> D.Class := "nav-link"
             <>
@@ -193,8 +193,8 @@ home currentUser articleLoadStatus tagsLoadStatus = Deku.do
               liftEffect $ setTab Global
               getArticles >>= liftEffect <<< setArticles <<< ArticlesLoaded
         ]
-    , tags: nut
-        ( tagsLoadStatus # switcher_ D.div case _ of
+    , tags: fixed
+        [  D.div_ [tagsLoadStatus <#~> case _ of
             TagsLoading -> blank
             TagsLoaded tags -> D.div (oneOf [ pure $ D.Class := "tag-list" ])
               ( map
@@ -210,8 +210,8 @@ home currentUser articleLoadStatus tagsLoadStatus = Deku.do
                       [ text_ tag ]
                   )
                   tags.tags
-              )
-        )
+              )]
+        ]
     }
   where
   loading :: Domable lock payload
