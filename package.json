@@ -27,7 +27,7 @@
   "scripts": {
     "postinstall": "spago build",
     "start": "NODE_OPTIONS=--openssl-legacy-provider webpack serve --mode=development --port=8081 --open",
-    "build": "NODE_OPTIONS=--openssl-legacy-provider spago build && webpack",
+    "build": "spago build && NODE_OPTIONS=--openssl-legacy-provider webpack",
     "clean": "rm -rf node_modules && rm -rf .spago && rm -rf output",
     "test": "jest"
   },
