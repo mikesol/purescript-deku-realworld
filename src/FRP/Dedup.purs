@@ -9,4 +9,4 @@ import FRP.Event (Event, mapAccum)
 
 dedup :: forall a. Eq a => Event a -> Event a
 dedup e = compact $
-  mapAccum (\a b -> let ja = Just a in Tuple ja (if b == ja then Nothing else Just a)) e Nothing
+  mapAccum (\a b -> let jb = Just b in Tuple a (if a == jb then Nothing else jb)) Nothing e

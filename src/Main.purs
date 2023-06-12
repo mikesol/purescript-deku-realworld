@@ -2,9 +2,16 @@ module Main where
 
 import Prelude
 
-import API.Effects (comments, getArticle, getArticles, getArticlesWithAuthor, getArticlesWithFavorited, getProfile, getTags)
+import API.Effects
+  ( comments
+  , getArticle
+  , getArticles
+  , getArticlesWithAuthor
+  , getArticlesWithFavorited
+  , getProfile
+  , getTags
+  )
 import API.Types (AuthState(..), maybeToAuthState, mostRecentCurrentUser)
-import Bolson.Control (switcher)
 import Components.Article (ArticleStatus(..), article)
 import Components.Create (create)
 import Components.Footer (footer)
@@ -18,8 +25,10 @@ import Control.Alt ((<|>))
 import Data.Maybe (Maybe(..))
 import Data.Tuple (curry, snd)
 import Data.Tuple.Nested ((/\))
+import Deku.Control ((<#~>), (<$~>))
+import Deku.Core (fixed)
 import Deku.DOM as D
-import Deku.Toplevel (runInBodyA)
+import Deku.Toplevel (runInBody)
 import Effect (Effect)
 import FRP.AffToEvent (affToEvent)
 import FRP.Event (burning)
@@ -50,18 +59,39 @@ main = do
       window >>= localStorage >>= setItem "session" (JSON.writeJSON cu)
       currentUser.push (SignedIn cu)
     mostRecentUser = mostRecentCurrentUser currentUser.event
-  runInBodyA
-    [ nav logOut (map snd routeEvent) currentUser.event
-    , D.div_
-        [ ( routeEvent # switcher case _ of
-              _ /\ Home -> home currentUser.event (pure ArticlesLoading <|> (ArticlesLoaded <$> affToEvent getArticles)) (TagsLoaded <$> affToEvent getTags)
-              _ /\ Article slug -> D.div_ [switcher (article currentUser.event) (pure ArticleLoading <|> (ArticleLoaded <$> affToEvent (getArticle slug) <*> affToEvent (_.comments <$> comments slug) ))]
-              _ /\ Settings -> settings mostRecentUser setUser
-              _ /\ Editor -> create mostRecentUser
-              _ /\ LogIn -> login setUser
-              _ /\ Register -> register setUser
-              _ /\ Profile username -> D.div_ [switcher (profile currentUser.event) (pure ProfileLoading <|> (ProfileLoaded <$> affToEvent (getProfile username) <*> affToEvent (getArticlesWithAuthor username) <*> affToEvent (getArticlesWithFavorited username)  ) )]
-          )
+  runInBody
+    ( fixed
+        [ nav logOut (map snd routeEvent) currentUser.event
+        , D.div_
+            [ ( routeEvent <#~> case _ of
+                  _ /\ Home -> home currentUser.event
+                    (pure ArticlesLoading <|> (ArticlesLoaded <$> affToEvent getArticles))
+                    (pure TagsLoading <|> TagsLoaded <$> affToEvent getTags)
+                  _ /\ Article slug -> D.div_
+                    [ (article currentUser.event) <$~>
+                        ( pure ArticleLoading <|>
+                            ( ArticleLoaded
+                                <$> affToEvent (getArticle slug)
+                                <*> affToEvent (_.comments <$> comments slug)
+                            )
+                        )
+                    ]
+                  _ /\ Settings -> settings mostRecentUser setUser
+                  _ /\ Editor -> create mostRecentUser
+                  _ /\ LogIn -> login setUser
+                  _ /\ Register -> register setUser
+                  _ /\ Profile username -> D.div_
+                    [ (profile currentUser.event) <$~>
+                        ( pure ProfileLoading <|>
+                            ( ProfileLoaded
+                                <$> affToEvent (getProfile username)
+                                <*> affToEvent (getArticlesWithAuthor username)
+                                <*> affToEvent (getArticlesWithFavorited username)
+                            )
+                        )
+                    ]
+              )
+            ]
+        , footer
         ]
-    , footer
-    ]
+    )

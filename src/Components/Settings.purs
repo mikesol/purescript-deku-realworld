@@ -13,13 +13,13 @@ import Data.Foldable (oneOf)
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
 import Deku.Attribute ((:=))
-import Deku.Control (blank, switcher_, text_)
-import Deku.Core (Domable)
+import Deku.Control (blank, text_, (<#~>))
+import Deku.Core (Domable, fixed)
 import Deku.DOM as D
-import Deku.Do (useState)
 import Deku.Do as Deku
+import Deku.Hooks (useState)
 import Deku.Listeners (click)
-import Deku.Pursx (nut, (~~))
+import Deku.Pursx ((~~))
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
@@ -50,8 +50,8 @@ settings_ =
 
 settings :: forall lock payload. Event User -> (User -> Effect Unit) -> Domable lock payload
 settings currentUser setCurrentUser = settings_ ~~
-  { formMatter: nut
-      ( Deku.do
+  { formMatter: fixed
+      [ Deku.do
           setErrors /\ errors <- useState []
           setProfilePictureUrl /\ profilePictureUrl <- useState Nothing
           setName /\ name <- useState Nothing
@@ -62,10 +62,10 @@ settings currentUser setCurrentUser = settings_ ~~
           let onCurrentUser f = f <$> currentUser
           let onCurrentUserM f = compact (f <$> currentUser)
           D.div_
-            [ errorMessages # switcher_ D.div case _ of
+            [D.div_ $ [errorMessages <#~> case _ of
                 [] -> blank
                 errs -> D.ul (oneOf [ pure $ D.Class := "error-messages" ])
-                  (map (D.li_ <<< pure <<< text_) errs)
+                  (map (D.li_ <<< pure <<< text_) errs)]
             , D.div_
                 [ textFieldWithValue (onCurrentUserM _.image) "URL of profile picture" (Just >>> setProfilePictureUrl)
                 , textFieldWithValue (onCurrentUser _.username) "Your Name" (Just >>> setName)
@@ -97,5 +97,5 @@ settings currentUser setCurrentUser = settings_ ~~
                     [ text_ "Update Settings" ]
                 ]
             ]
-      )
+      ]
   }

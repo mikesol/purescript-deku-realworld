@@ -13,13 +13,13 @@ import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Tuple.Nested ((/\))
 import Date (prettyDate)
 import Deku.Attribute ((:=))
-import Deku.Control (ezDyn_, text, text_)
-import Deku.Core (Domable)
+import Deku.Control (ezDyn, text, text_)
+import Deku.Core (Domable, fixed)
 import Deku.DOM as D
-import Deku.Do (useMemoized, useState, useState')
 import Deku.Do as Deku
+import Deku.Hooks (useMemoized', useState, useState')
 import Deku.Listeners (click, injectElementT)
-import Deku.Pursx (nut, (~~))
+import Deku.Pursx ((~~))
 import Effect.Aff (error, launchAff_, throwError)
 import Effect.Class (liftEffect)
 import FRP.Dedup (dedup)
@@ -37,57 +37,57 @@ derive instance Eq CommentText
 articleLoading_ =
   Proxy
     :: Proxy
-         """<div class="article-page">
-
+         """<div class="article-page"> 
     <div class="banner">
-        <div class="container"><h1>Loading...</h1></div></div></div>
-
+        <div class="container"><h1>Loading...</h1></div>
+    </div>
+</div>
 """
 
 myComment_ =
   Proxy
     :: Proxy
-         """
-                <div class="card">
-                    <div class="card-block">
-                        <p class="card-text">~body~</p>
-                    </div>
-                    <div class="card-footer">
-                        <a ~profile1~ class="comment-author">
-                            <img ~imgsrc~ class="comment-author-img"/>
-                        </a>
-                        &nbsp;
-                        <a ~profile2~ class="comment-author">~username~</a>
-                        <span class="date-posted">~date~</span>
-                        <span class="mod-options">
-              <!-- <i class="ion-edit"></i> -->
-              <i ~deleteAction~ class="ion-trash-a"></i>
-            </span>
-                    </div>
-                </div>"""
+         """ <div class="card">
+    <div class="card-block">
+        <p class="card-text">~body~</p>
+    </div>
+    <div class="card-footer">
+        <a ~profile1~ class="comment-author">
+            <img ~imgsrc~ class="comment-author-img"/>
+        </a>
+        &nbsp;
+        <a ~profile2~ class="comment-author">~username~</a>
+        <span class="date-posted">~date~</span>
+        <span class="mod-options">
+            <!-- <i class="ion-edit"></i> -->
+            <i ~deleteAction~ class="ion-trash-a"></i>
+        </span>
+    </div>
+</div>
+"""
 
 theirComment_ =
   Proxy
     :: Proxy
          """<div class="card">
-                    <div class="card-block">
-                        <p class="card-text">~body~</p>
-                    </div>
-                    <div class="card-footer">
-                        <a ~profile1~ class="comment-author">
-                            <img ~imgsrc~ class="comment-author-img"/>
-                        </a>
-                        &nbsp;
-                        <a ~profile2~ class="comment-author">~username~</a>
-                        <span class="date-posted">~date~</span>
-                    </div>
-                </div>"""
+    <div class="card-block">
+        <p class="card-text">~body~</p>
+    </div>
+    <div class="card-footer">
+        <a ~profile1~ class="comment-author">
+            <img ~imgsrc~ class="comment-author-img"/>
+        </a>
+        &nbsp;
+        <a ~profile2~ class="comment-author">~username~</a>
+        <span class="date-posted">~date~</span>
+    </div>
+</div>
+"""
 
 article_ =
   Proxy
     :: Proxy
          """<div class="article-page">
-
     <div class="banner">
         <div class="container">
 
@@ -204,7 +204,7 @@ articleLoaded
   setFavorited /\ isFavorited <- useState favorited
   setNewComment /\ newComment <- useState'
   setCommentTA /\ commentTA <- useState'
-  setFavoritesCount /\ favoritesCount <- useMemoized ((_ <|> pure favC) >>> dedup)
+  setFavoritesCount /\ favoritesCount <- useMemoized' ((_ <|> pure favC) >>> dedup)
   let followAttrs' = followAttrs username currentUser isFollowing setFollowing
   let followText' = followText isFollowing
   let
@@ -213,7 +213,7 @@ articleLoaded
       , currentUser <#> \cu -> D.Style := if isSignedIn cu then "" else "display: none;"
       , doFavoriting currentUser slug isFavorited favoritesCount setFavoritesCount setFavorited
       ]
-  let favoriteText = nut (text (isFavorited <#> if _ then "Favorited" else "Favorite Post"))
+  let favoriteText = fixed [ text (isFavorited <#> if _ then "Favorited" else "Favorite Post") ]
   let img = pure (D.Src := image)
   let
     myImg = currentUser <#>
@@ -224,10 +224,10 @@ articleLoaded
             SignedOut -> Nothing
       )
   let authProf = pure (D.Href := "/#/profile/" <> username)
-  let authorName = nut (text_ username)
-  let fCount = nut (text (show <$> favoritesCount))
+  let authorName = fixed [ text_ username ]
+  let fCount = fixed [ text (show <$> favoritesCount) ]
   article_ ~~
-    { title: nut (D.h1_ [ text_ title ])
+    { title: fixed [ D.h1_ [ text_ title ] ]
     , image1: img
     , image2: img
     , image3: myImg
@@ -235,14 +235,14 @@ articleLoaded
     , authProf2: authProf
     , authProf3: authProf
     , authProf4: authProf
-    , body: nut (D.p_ [ text_ body ])
-    , description: nut (D.p_ [ text_ description ])
+    , body: fixed [ D.p_ [ text_ body ] ]
+    , description: fixed [ D.p_ [ text_ description ] ]
     , author1: authorName
     , author2: authorName
     , author3: authorName
     , author4: authorName
-    , commentTextArea: nut
-        ( D.textarea
+    , commentTextArea: fixed
+        [ D.textarea
             ( oneOf
                 [ injectElementT setCommentTA
                 , pure $ D.Class := "form-control"
@@ -251,7 +251,7 @@ articleLoaded
                 ]
             )
             []
-        )
+        ]
     , commentButtonCommand: oneOf
         [ click $ ({ cu: _, ta: _ } <$> currentUser <*> commentTA) <#> \{ cu, ta } -> do
             v <- value ta
@@ -261,7 +261,7 @@ articleLoaded
                   Right c -> liftEffect $ setNewComment c.comment
                   Left e -> throwError (error (show e))
         ]
-    , lastUpdated: nut (text_ (prettyDate updatedAt))
+    , lastUpdated: fixed [ text_ (prettyDate updatedAt) ]
     , favoriteAttrs1: favoriteAttrs
     , favoriteAttrs2: favoriteAttrs
     , favoriteText1: favoriteText
@@ -271,35 +271,66 @@ articleLoaded
     , followText1: followText'
     , followText2: followText'
     , postComment: oneOf [ currentUser <#> \cu -> D.Style := if isSignedIn cu then "" else "display: none;" ]
-    , articleHeader: nut $ D.h2_ [ text_ title ]
+    , articleHeader: fixed [ D.h2_ [ text_ title ] ]
     , favoritesCount1: fCount
     , favoritesCount2: fCount
-    , commentList: nut $ ezDyn_ D.div $
-        ({ cu: _, com: _ } <$> currentUser <*> (newComment <|> oneOfMap pure comments)) <#> \{ cu, com } { remove } -> do
-          let profile = pure (D.Href := "/#/profile/" <> com.author.username)
-          let
-            common =
-              { body: nut (text_ com.body)
-              , imgsrc: pure (D.Src := com.author.image)
-              , profile1: profile
-              , profile2: profile
-              , username: nut (text_ com.author.username)
-              , date: nut (text_ (prettyDate com.updatedAt))
-              }
-          maybe (theirComment_ ~~ common)
-            ( \u -> do
-                let
-                  deleteAction = click $ pure do
-                    launchAff_ $ deleteComment u.token slug com.id
-                    remove
+    , commentList: D.div_
+        [ ezDyn $
+            (({ cu: _, com: _ }) <$> currentUser <*> (newComment <|> oneOfMap pure comments)) <#> \{ cu, com } { remove } -> do
+              let profile = pure (D.Href := "/#/profile/" <> com.author.username)
+              let
+                common =
+                  { body: fixed [ text_ com.body ]
+                  , imgsrc: pure (D.Src := com.author.image)
+                  , profile1: profile
+                  , profile2: profile
+                  , username: fixed [ text_ com.author.username ]
+                  , date: fixed [ text_ (prettyDate com.updatedAt) ]
+                  }
+              maybe (theirComment_ ~~ common)
+                ( \u -> do
+                    let
+                      deleteAction = click $ pure do
+                        launchAff_ $ deleteComment u.token slug com.id
+                        remove
 
-                myComment_ ~~ (common `union` { deleteAction })
-            )
-            ( case cu of
-                SignedIn u
-                  | u.username == com.author.username -> Just u
-                  | otherwise -> Nothing
-                SignedOut -> Nothing
+                    myComment_ ~~ (common `union` { deleteAction })
+                )
+                ( case cu of
+                    SignedIn u
+                      | u.username == com.author.username -> Just u
+                      | otherwise -> Nothing
+                    SignedOut -> Nothing
 
-            )
+                )
+        ]
+    ----------
+    -- , commentList: fixed [ ezDyn_ D.div $
+    --     ({ cu: _, com: _ } <$> currentUser <*> (newComment <|> oneOfMap pure comments)) <#> \{ cu, com } { remove } -> do
+    --       let profile = pure (D.Href := "/#/profile/" <> com.author.username)
+    --       let
+    --         common =
+    --           { body: nut (text_ com.body)
+    --           , imgsrc: pure (D.Src := com.author.image)
+    --           , profile1: profile
+    --           , profile2: profile
+    --           , username: nut (text_ com.author.username)
+    --           , date: nut (text_ (prettyDate com.updatedAt))
+    --           }
+    --       maybe (theirComment_ ~~ common)
+    --         ( \u -> do
+    --             let
+    --               deleteAction = click $ pure do
+    --                 launchAff_ $ deleteComment u.token slug com.id
+    --                 remove
+
+    --             myComment_ ~~ (common `union` { deleteAction })
+    --         )
+    --         ( case cu of
+    --             SignedIn u
+    --               | u.username == com.author.username -> Just u
+    --               | otherwise -> Nothing
+    --             SignedOut -> Nothing
+
+    --         )]
     }
