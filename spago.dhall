@@ -15,6 +15,7 @@
   , "foldable-traversable"
   , "foreign"
   , "foreign-object"
+  , "free"
   , "http-methods"
   , "hyrule"
   , "maybe"
