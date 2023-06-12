@@ -8,14 +8,13 @@ import Components.Field (largeTextField, textField)
 import Control.Alt ((<|>))
 import Data.Array (intercalate)
 import Data.Either (Either(..))
-import Data.Foldable (oneOf)
 import Data.Maybe (Maybe(..), maybe)
 import Data.String.Utils (words)
 import Data.Tuple.Nested ((/\))
 import Data.Validation.Semigroup (V, invalid, toEither)
-import Deku.Attribute ((:=))
+import Deku.Attribute ((!:=))
 import Deku.Control (blank, text_, (<#~>))
-import Deku.Core (Domable, fixed)
+import Deku.Core (Nut, fixed)
 import Deku.DOM as D
 import Deku.Do as Deku
 import Deku.Hooks (useState, useState')
@@ -46,7 +45,7 @@ create_ =
             </div>
 """
 
-create :: forall lock payload. Event User -> Domable lock payload
+create :: Event User -> Nut
 create user =
   create_ ~~
     { formMatter: fixed
@@ -59,55 +58,53 @@ create user =
             setTags /\ tags <- useState []
             let errorMessages = ((title <|> description <|> (bodyFocus $> Nothing) <|> (tags $> Nothing) <|> pure Nothing) $> []) <|> errors
             D.div_
-              [D.div_ [errorMessages <#~> case _ of
-                  [] -> blank
-                  errs -> D.ul (oneOf [ pure $ D.Class := "error-messages" ])
-                    (map (D.li_ <<< pure <<< text_) errs)]
+              [ D.div_
+                  [ errorMessages <#~> case _ of
+                      [] -> blank
+                      errs -> D.ul [ D.Class !:= "error-messages" ]
+                        (map (D.li_ <<< pure <<< text_) errs)
+                  ]
               , D.div_
                   [ largeTextField "Article Title" (Just >>> setTitle)
                   , textField "What's this article about?" (Just >>> setDescription)
-                  , D.fieldset (oneOf [ pure $ D.Class := "form-group" ])
+                  , D.fieldset [ D.Class !:= "form-group" ]
                       [ D.textarea
-                          ( oneOf
-                              [ pure $ D.Class := "form-control"
-                              , pure $ D.Rows := "8"
-                              , injectElementT setBodyElt
-                              , pure $ D.Placeholder := "Write your article (in markdown)"
-                              , pure $ D.OnFocus := (setBodyFocus $ Just unit)
-                              ]
-                          )
+                          [ D.Class !:= "form-control"
+                          , D.Rows !:= "8"
+                          , injectElementT setBodyElt
+                          , D.Placeholder !:= "Write your article (in markdown)"
+                          , D.OnFocus !:= (setBodyFocus $ Just unit)
+                          ]
                           []
                       ]
                   , textField "Enter tags" (words >>> setTags)
                   , D.button
-                      ( oneOf
-                          [ pure $ D.Class := "btn btn-lg btn-primary pull-xs-right"
-                          , click $
-                              ( { title: _, description: _, tags: _, bodyElt: _, user: _ }
-                                  <$> title
-                                  <*> description
-                                  <*> tags
-                                  <*> bodyElt
-                                  <*> user
-                              ) <#> \fields -> do
-                                txt <- value fields.bodyElt
-                                let
-                                  parsed = { title: _, description: _, body: _, tagList: _ }
-                                    <$> withErrors [ "Title cannot be empty" ] fields.title
-                                    <*> withErrors [ "Description cannot be empty" ] fields.description
-                                    <*> withErrors [ "Body cannot be empty" ] (if txt == "" then Nothing else Just txt)
-                                    <*> pure fields.tags
-                                case toEither parsed of
-                                  Left errs -> setErrors errs
-                                  Right article -> launchAff_ do
-                                    resp <- createArticle fields.user.token { article }
-                                    liftEffect case resp of
-                                      Left { errors: errs } -> setErrors (map (\(a /\ b) -> a <> " " <> intercalate ", " b) (toUnfoldable errs))
-                                      -- for now don't do anything
-                                      Right _ -> do
-                                        window >>= location >>= setHref "/#/"
-                          ]
-                      )
+                      [ D.Class !:= "btn btn-lg btn-primary pull-xs-right"
+                      , click $
+                          ( { title: _, description: _, tags: _, bodyElt: _, user: _ }
+                              <$> title
+                              <*> description
+                              <*> tags
+                              <*> bodyElt
+                              <*> user
+                          ) <#> \fields -> do
+                            txt <- value fields.bodyElt
+                            let
+                              parsed = { title: _, description: _, body: _, tagList: _ }
+                                <$> withErrors [ "Title cannot be empty" ] fields.title
+                                <*> withErrors [ "Description cannot be empty" ] fields.description
+                                <*> withErrors [ "Body cannot be empty" ] (if txt == "" then Nothing else Just txt)
+                                <*> pure fields.tags
+                            case toEither parsed of
+                              Left errs -> setErrors errs
+                              Right article -> launchAff_ do
+                                resp <- createArticle fields.user.token { article }
+                                liftEffect case resp of
+                                  Left { errors: errs } -> setErrors (map (\(a /\ b) -> a <> " " <> intercalate ", " b) (toUnfoldable errs))
+                                  -- for now don't do anything
+                                  Right _ -> do
+                                    window >>= location >>= setHref "/#/"
+                      ]
                       [ text_ "Publish Article" ]
                   ]
               ]

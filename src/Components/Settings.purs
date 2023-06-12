@@ -9,12 +9,11 @@ import Control.Alt ((<|>))
 import Data.Array (intercalate)
 import Data.Compactable (compact)
 import Data.Either (Either(..))
-import Data.Foldable (oneOf)
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
-import Deku.Attribute ((:=))
+import Deku.Attribute ((!:=))
 import Deku.Control (blank, text_, (<#~>))
-import Deku.Core (Domable, fixed)
+import Deku.Core (Nut, fixed)
 import Deku.DOM as D
 import Deku.Do as Deku
 import Deku.Hooks (useState)
@@ -48,7 +47,7 @@ settings_ =
     </div>
 </div>"""
 
-settings :: forall lock payload. Event User -> (User -> Effect Unit) -> Domable lock payload
+settings :: Event User -> (User -> Effect Unit) -> Nut
 settings currentUser setCurrentUser = settings_ ~~
   { formMatter: fixed
       [ Deku.do
@@ -62,10 +61,12 @@ settings currentUser setCurrentUser = settings_ ~~
           let onCurrentUser f = f <$> currentUser
           let onCurrentUserM f = compact (f <$> currentUser)
           D.div_
-            [D.div_ $ [errorMessages <#~> case _ of
-                [] -> blank
-                errs -> D.ul (oneOf [ pure $ D.Class := "error-messages" ])
-                  (map (D.li_ <<< pure <<< text_) errs)]
+            [ D.div_ $
+                [ errorMessages <#~> case _ of
+                    [] -> blank
+                    errs -> D.ul [ D.Class !:= "error-messages" ]
+                      (map (D.li_ <<< pure <<< text_) errs)
+                ]
             , D.div_
                 [ textFieldWithValue (onCurrentUserM _.image) "URL of profile picture" (Just >>> setProfilePictureUrl)
                 , textFieldWithValue (onCurrentUser _.username) "Your Name" (Just >>> setName)
@@ -73,27 +74,26 @@ settings currentUser setCurrentUser = settings_ ~~
                 , textFieldWithValue (onCurrentUser _.email) "Email" (Just >>> setEmail)
                 , passwordField "Password" (Just >>> setPassword)
                 , D.button
-                    ( oneOf
-                        [ pure $ D.Class := "btn btn-lg btn-primary pull-xs-right"
-                        , click $
-                            ( { currentUser: _, user: _ } <$> currentUser <*>
-                                ( { email: _, password: _, username: _, image: _, bio: _ }
-                                    <$> email
-                                    <*> password
-                                    <*> name
-                                    <*> profilePictureUrl
-                                    <*> bio
-                                )
-                            ) <#> \{ user, currentUser: cu } -> do
-                              launchAff_ do
-                                resp <- Effects.updateUser cu.token { user }
-                                liftEffect case resp of
-                                  Left { errors: errs } -> setErrors (map (\(a /\ b) -> a <> " " <> intercalate ", " b) (toUnfoldable errs))
-                                  Right u -> do
-                                    setCurrentUser u.user
-                                    window >>= location >>= setHref "/#/"
-                        ]
-                    )
+                    [ D.Class !:= "btn btn-lg btn-primary pull-xs-right"
+                    , click $
+                        ( { currentUser: _, user: _ } <$> currentUser <*>
+                            ( { email: _, password: _, username: _, image: _, bio: _ }
+                                <$> email
+                                <*> password
+                                <*> name
+                                <*> profilePictureUrl
+                                <*> bio
+                            )
+                        ) <#> \{ user, currentUser: cu } -> do
+                          launchAff_ do
+                            resp <- Effects.updateUser cu.token { user }
+                            liftEffect case resp of
+                              Left { errors: errs } -> setErrors (map (\(a /\ b) -> a <> " " <> intercalate ", " b) (toUnfoldable errs))
+                              Right u -> do
+                                setCurrentUser u.user
+                                window >>= location >>= setHref "/#/"
+                    ]
+
                     [ text_ "Update Settings" ]
                 ]
             ]

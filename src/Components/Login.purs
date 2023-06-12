@@ -8,13 +8,12 @@ import Components.Field (largePasswordField, largeTextField)
 import Control.Alt ((<|>))
 import Data.Array (intercalate)
 import Data.Either (Either(..))
-import Data.Foldable (oneOf)
 import Data.Maybe (Maybe(..), maybe)
 import Data.Tuple.Nested ((/\))
 import Data.Validation.Semigroup (V, invalid, toEither)
-import Deku.Attribute ((:=))
+import Deku.Attribute ((!:=))
 import Deku.Control (blank, text_, (<#~>))
-import Deku.Core (Domable, fixed)
+import Deku.Core (Nut, fixed)
 import Deku.DOM as D
 import Deku.Do as Deku
 import Deku.Hooks (useState)
@@ -46,7 +45,7 @@ login_ =
 </div>
 """
 
-login :: forall lock payload. (User -> Effect Unit) -> Domable lock payload
+login ::  (User -> Effect Unit) -> Nut
 login setCurrentUser = login_ ~~
   { formMatter: fixed
       [ Deku.do
@@ -58,15 +57,14 @@ login setCurrentUser = login_ ~~
             [ D.div_
                 [ errorMessages <#~> case _ of
                     [] -> blank
-                    errs -> D.ul (oneOf [ pure $ D.Class := "error-messages" ])
+                    errs -> D.ul [ D.Class !:= "error-messages" ]
                       (map (D.li_ <<< pure <<< text_) errs)
                 ]
             , D.div_
                 [ largeTextField "Email" (Just >>> setEmail)
                 , largePasswordField "Password" (Just >>> setPassword)
                 , D.button
-                    ( oneOf
-                        [ pure $ D.Class := "btn btn-lg btn-primary pull-xs-right"
+                        [ D.Class !:= "btn btn-lg btn-primary pull-xs-right"
                         , click $
                             ( { email: _, password: _ }
                                 <$> email
@@ -86,7 +84,6 @@ login setCurrentUser = login_ ~~
                                       setCurrentUser currentUser.user
                                       window >>= location >>= setHref "/#/"
                         ]
-                    )
                     [ text_ "Sign in" ]
                 ]
             ]

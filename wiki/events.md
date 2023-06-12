@@ -33,8 +33,8 @@ template =
 app :: Nut
 app = template ~~
   { h1Atts: oneOf
-      [ pure $ D.Style := "style=\"color:blue;\""
-      , pure $ D.Id := "my-h1"
+      [ style_ "style=\"color:blue;\""
+      , id_ := "my-h1"
       ]
   , txt: nut
       ( D.span_
@@ -82,8 +82,8 @@ template =
 app :: Nut
 app = template ~~
   { h1Atts: oneOf
-      [ pure $ D.Style := "style=\"color:blue;\""
-      , pure $ D.Id := "my-h1"
+      [ style_ "style=\"color:blue;\""
+      , id_ := "my-h1"
       ]
   , txt: nut
       ( D.span_
@@ -131,8 +131,8 @@ template =
 app :: Nut
 app = template ~~
   { h1Atts: oneOf
-      [ pure $ D.Style := "style=\"color:blue;\""
-      , pure $ D.Id := "my-h1"
+      [ style_ "style=\"color:blue;\""
+      , id_ := "my-h1"
       ]
   , txt: nut
       ( D.span_

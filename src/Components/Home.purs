@@ -9,13 +9,14 @@ import Control.Alt ((<|>))
 import Data.Foldable (oneOf)
 import Data.Tuple.Nested ((/\))
 import Date (prettyDate)
-import Deku.Attribute ((:=))
+import Deku.Attributes (style_, klass_)
+import Deku.Attribute ((:=), (!:=))
 import Deku.Control (blank, text, text_, (<#~>))
-import Deku.Core (Domable, fixed)
+import Deku.Core (Nut, fixed)
 import Deku.DOM as D
 import Deku.Do as Deku
 import Deku.Hooks (useState, useState')
-import Deku.Listeners (click)
+import Deku.Listeners (click, click_)
 import Deku.Pursx ((~~))
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
@@ -25,7 +26,7 @@ import Type.Proxy (Proxy(..))
 data ArticleLoadStatus = ArticlesLoading | ArticlesLoaded MultipleArticles
 data TagsLoadStatus = TagsLoading | TagsLoaded { tags :: Array String }
 
-articlePreview :: forall lock payload. Event AuthState -> Article -> Domable lock payload
+articlePreview :: Event AuthState -> Article -> Nut
 articlePreview
   currentUser
   { updatedAt
@@ -38,17 +39,17 @@ articlePreview
   } = Deku.do
   setFavoritesCount /\ favoritesCount <- useState fcount
   setFavorited /\ isFavorited <- useState favorited
-  let fc = fixed [text (show <$> favoritesCount)]
+  let fc = fixed [ text (show <$> favoritesCount) ]
   let
     signedOutButton = oneOf
-      [ pure $ D.Class := "text-success btn-sm pull-xs-right"
+      [ klass_  "text-success btn-sm pull-xs-right"
       , currentUser <#> \cu -> D.Style := case cu of
           SignedIn _ -> "display:none;"
           SignedOut -> ""
       ]
   let
     signedInButton = oneOf
-      [ pure $ D.Class := "btn btn-outline-primary btn-sm pull-xs-right"
+      [ klass_  "btn btn-outline-primary btn-sm pull-xs-right"
       , currentUser <#> \cu -> D.Style := case cu of
           SignedIn _ -> ""
           SignedOut -> "display:none;"
@@ -61,10 +62,10 @@ articlePreview
     , signedOutButton
     , signedInButton
     , href: pure (D.Href := "/#/article/" <> slug)
-    , username: fixed [text_ username]
-    , title: fixed [D.h1_ [ text_ title ]]
-    , description: fixed [D.p_ [ text_ description ]]
-    , date: fixed [text_ (prettyDate updatedAt)]
+    , username: fixed [ text_ username ]
+    , title: fixed [ D.h1_ [ text_ title ] ]
+    , description: fixed [ D.p_ [ text_ description ] ]
+    , date: fixed [ text_ (prettyDate updatedAt) ]
     , favoritesCount1: fc
     , favoritesCount2: fc
     }
@@ -151,15 +152,17 @@ home_ =
 
 data Tab = Global | Feed
 
-home :: forall lock payload. Event AuthState -> Event ArticleLoadStatus -> Event TagsLoadStatus -> Domable lock payload
+home :: Event AuthState -> Event ArticleLoadStatus -> Event TagsLoadStatus -> Nut
 home currentUser articleLoadStatus tagsLoadStatus = Deku.do
   setArticles /\ articles <- useState'
   setTab /\ tab <- useState Global
   home_ ~~
     { articlePreviews: fixed
-        [  D.div_ [(articleLoadStatus <|> articles) <#~> case _ of
-            ArticlesLoading -> loading
-            ArticlesLoaded a -> D.div_ (map (articlePreview currentUser) a.articles)]
+        [ D.div_
+            [ (articleLoadStatus <|> articles) <#~> case _ of
+                ArticlesLoading -> loading
+                ArticlesLoaded a -> D.div_ (map (articlePreview currentUser) a.articles)
+            ]
         ]
     , feedAttributes: oneOf
         [ { cu: _, ct: _ } <$> currentUser <*> tab <#> \{ cu, ct } -> D.Class := "nav-link"
@@ -187,32 +190,33 @@ home currentUser articleLoadStatus tagsLoadStatus = Deku.do
         [ tab <#> \ct -> D.Class := "nav-link" <> case ct of
             Feed -> ""
             Global -> " active"
-        , pure $ D.Style := "cursor: pointer;"
+        , style_ "cursor: pointer;"
         , click $ pure $ setArticles ArticlesLoading *> launchAff_
             do
               liftEffect $ setTab Global
               getArticles >>= liftEffect <<< setArticles <<< ArticlesLoaded
         ]
     , tags: fixed
-        [  D.div_ [tagsLoadStatus <#~> case _ of
-            TagsLoading -> blank
-            TagsLoaded tags -> D.div (oneOf [ pure $ D.Class := "tag-list" ])
-              ( map
-                  ( \tag -> D.a
-                      ( oneOf
-                          [ pure $ D.Class := "tag-pill tag-default"
-                          , pure $ D.Style := "cursor: pointer;"
-                          , click $ pure $ setArticles ArticlesLoading *> launchAff_
+        [ D.div_
+            [ tagsLoadStatus <#~> case _ of
+                TagsLoading -> blank
+                TagsLoaded tags -> D.div [ klass_  "tag-list" ]
+                  ( map
+                      ( \tag -> D.a
+                          [ D.Class !:= "tag-pill tag-default"
+                          , D.Style !:= "cursor: pointer;"
+                          , click_ $ setArticles ArticlesLoading *> launchAff_
                               do
                                 getArticlesWithTag tag >>= liftEffect <<< setArticles <<< ArticlesLoaded
                           ]
+
+                          [ text_ tag ]
                       )
-                      [ text_ tag ]
+                      tags.tags
                   )
-                  tags.tags
-              )]
+            ]
         ]
     }
   where
-  loading :: Domable lock payload
+  loading :: Nut
   loading = articlesLoading_ ~~ {}

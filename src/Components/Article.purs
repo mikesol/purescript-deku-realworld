@@ -11,13 +11,14 @@ import Data.Either (Either(..))
 import Data.Foldable (oneOf, oneOfMap)
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Tuple.Nested ((/\))
+import Deku.Attributes (klass_)
 import Date (prettyDate)
-import Deku.Attribute ((:=))
-import Deku.Control (ezDyn, text, text_)
-import Deku.Core (Domable, fixed)
+import Deku.Attribute ((:=), (!:=))
+import Deku.Control (text, text_)
+import Deku.Core (Nut, dyn, fixed)
 import Deku.DOM as D
 import Deku.Do as Deku
-import Deku.Hooks (useMemoized', useState, useState')
+import Deku.Hooks (useMemoized', useState, useState', useDyn_)
 import Deku.Listeners (click, injectElementT)
 import Deku.Pursx ((~~))
 import Effect.Aff (error, launchAff_, throwError)
@@ -177,11 +178,11 @@ article_ =
 </div>
 """
 
-article :: forall lock payload. Event AuthState -> ArticleStatus -> Domable lock payload
+article :: Event AuthState -> ArticleStatus -> Nut
 article e (ArticleLoaded a cmt) = articleLoaded e a cmt
 article _ ArticleLoading = articleLoading_ ~~ {}
 
-articleLoaded :: forall lock payload. Event AuthState -> SingleArticle -> Array Comment -> Domable lock payload
+articleLoaded :: Event AuthState -> SingleArticle -> Array Comment -> Nut
 articleLoaded
   currentUser
   { article:
@@ -209,7 +210,7 @@ articleLoaded
   let followText' = followText isFollowing
   let
     favoriteAttrs = oneOf
-      [ pure $ D.Class := "btn btn-sm btn-outline-primary"
+      [ klass_  "btn btn-sm btn-outline-primary"
       , currentUser <#> \cu -> D.Style := if isSignedIn cu then "" else "display: none;"
       , doFavoriting currentUser slug isFavorited favoritesCount setFavoritesCount setFavorited
       ]
@@ -243,13 +244,11 @@ articleLoaded
     , author4: authorName
     , commentTextArea: fixed
         [ D.textarea
-            ( oneOf
-                [ injectElementT setCommentTA
-                , pure $ D.Class := "form-control"
-                , pure $ D.Placeholder := "Write a comment..."
-                , pure $ D.Rows := "3"
-                ]
-            )
+            [ injectElementT setCommentTA
+            , D.Class !:= "form-control"
+            , D.Placeholder !:= "Write a comment..."
+            , D.Rows !:= "3"
+            ]
             []
         ]
     , commentButtonCommand: oneOf
@@ -275,8 +274,9 @@ articleLoaded
     , favoritesCount1: fCount
     , favoritesCount2: fCount
     , commentList: D.div_
-        [ ezDyn $
-            (({ cu: _, com: _ }) <$> currentUser <*> (newComment <|> oneOfMap pure comments)) <#> \{ cu, com } { remove } -> do
+        [ dyn $
+            (({ cu: _, com: _ }) <$> currentUser <*> (newComment <|> oneOfMap pure comments)) <#> \{ cu, com } -> Deku.do
+              { remove } <- useDyn_
               let profile = pure (D.Href := "/#/profile/" <> com.author.username)
               let
                 common =
@@ -293,7 +293,6 @@ articleLoaded
                       deleteAction = click $ pure do
                         launchAff_ $ deleteComment u.token slug com.id
                         remove
-
                     myComment_ ~~ (common `union` { deleteAction })
                 )
                 ( case cu of
@@ -304,33 +303,4 @@ articleLoaded
 
                 )
         ]
-    ----------
-    -- , commentList: fixed [ ezDyn_ D.div $
-    --     ({ cu: _, com: _ } <$> currentUser <*> (newComment <|> oneOfMap pure comments)) <#> \{ cu, com } { remove } -> do
-    --       let profile = pure (D.Href := "/#/profile/" <> com.author.username)
-    --       let
-    --         common =
-    --           { body: nut (text_ com.body)
-    --           , imgsrc: pure (D.Src := com.author.image)
-    --           , profile1: profile
-    --           , profile2: profile
-    --           , username: nut (text_ com.author.username)
-    --           , date: nut (text_ (prettyDate com.updatedAt))
-    --           }
-    --       maybe (theirComment_ ~~ common)
-    --         ( \u -> do
-    --             let
-    --               deleteAction = click $ pure do
-    --                 launchAff_ $ deleteComment u.token slug com.id
-    --                 remove
-
-    --             myComment_ ~~ (common `union` { deleteAction })
-    --         )
-    --         ( case cu of
-    --             SignedIn u
-    --               | u.username == com.author.username -> Just u
-    --               | otherwise -> Nothing
-    --             SignedOut -> Nothing
-
-    --         )]
     }

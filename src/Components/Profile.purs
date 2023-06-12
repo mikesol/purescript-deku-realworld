@@ -11,8 +11,9 @@ import Data.Tuple.Nested ((/\))
 import Date (prettyDate)
 import Deku.Attribute ((:=))
 import Deku.Control (blank, text, text_, (<#~>))
-import Deku.Core (Domable, fixed)
+import Deku.Core (Nut, fixed)
 import Deku.DOM as D
+import Deku.Attributes (style_, klass_)
 import Deku.Do as Deku
 import Deku.Hooks (useState)
 import Deku.Listeners (click)
@@ -50,7 +51,7 @@ singleArticle_ =
     </a>
 </div>"""
 
-singleArticle :: forall lock payload. Event AuthState -> Article -> Domable lock payload
+singleArticle ::  Event AuthState -> Article -> Nut
 singleArticle
   currentUser
   { updatedAt
@@ -66,14 +67,14 @@ singleArticle
   let fc = fixed [text (show <$> favoritesCount)]
   let
     signedOutButton = oneOf
-      [ pure $ D.Class := "text-success btn-sm pull-xs-right"
+      [ klass_  "text-success btn-sm pull-xs-right"
       , currentUser <#> \cu -> D.Style := case cu of
           SignedIn _ -> "display:none;"
           SignedOut -> ""
       ]
   let
     signedInButton = oneOf
-      [ pure $ D.Class := "btn btn-outline-primary btn-sm pull-xs-right"
+      [ klass_  "btn btn-outline-primary btn-sm pull-xs-right"
       , currentUser <#> \cu -> D.Style := case cu of
           SignedIn _ -> ""
           SignedOut -> "display:none;"
@@ -165,13 +166,13 @@ profileLoading_ =
                     </div>
 """
 
-profile :: forall lock payload. Event AuthState -> ProfileStatus -> Domable lock payload
+profile ::  Event AuthState -> ProfileStatus -> Nut
 profile e (ProfileLoaded a b c) = profileLoaded e a b c
 profile _ ProfileLoading = profileLoading_ ~~ {}
 
 data Tab = MyArticles | FavoritedArticles
 
-profileLoaded :: forall lock payload. Event AuthState -> SingleProfile -> MultipleArticles -> MultipleArticles -> Domable lock payload
+profileLoaded ::  Event AuthState -> SingleProfile -> MultipleArticles -> MultipleArticles -> Nut
 profileLoaded
   currentUser
   { profile:
@@ -198,14 +199,14 @@ profileLoaded
         [ tab <#> \ct -> D.Class := "nav-link" <> case ct of
             FavoritedArticles -> " active"
             MyArticles -> ""
-        , pure $ D.Style := "cursor: pointer;"
+        , style_ "cursor: pointer;"
         , click $ pure $ setTab FavoritedArticles
         ]
     , myAttributes: oneOf
         [ tab <#> \ct -> D.Class := "nav-link" <> case ct of
             FavoritedArticles -> ""
             MyArticles -> " active"
-        , pure $ D.Style := "cursor: pointer;"
+        , style_ "cursor: pointer;"
         , click $ pure $ setTab MyArticles
         ]
     , articleList:
