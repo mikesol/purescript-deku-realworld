@@ -33,9 +33,9 @@ app = Deku.do
   let
     input placeholder cb = D.input
       ( oneOf
-          [ pure $ D.Placeholder := placeholder
+          [ D.Placeholder !:= placeholder
           , injectElementT cb
-          , pure $ D.OnFocus := setMessage NoMessage
+          , D.OnFocus !:= setMessage NoMessage
           ]
       )
       []
@@ -44,8 +44,8 @@ app = Deku.do
     , input "URL" setUrlElt
     , message # switcher_ D.div case _ of
       NoMessage -> blank
-      Errors e -> D.ul_ (map (\i -> D.li (pure $ D.Style := "color: red;") [text_ i]) e)
-      Success -> D.p (pure $ D.Style := "color: green;") [text_ "Form submitted with no errors!"]
+      Errors e -> D.ul_ (map (\i -> D.li (style_ "color: red;") [text_ i]) e)
+      Success -> D.p (style_ "color: green;") [text_ "Form submitted with no errors!"]
     , D.button
         ( oneOf
             [ click $ ({ email: _, url: _ } <$> emailElt <*> urlElt) <#> \fields -> do

@@ -60,7 +60,7 @@ simplePostOrPut' method headers url payload = do
     Right r ->
       case JSON.readJSON r.body of
         Right (r :: o) -> pure (Right r)
-        Left e -> case JSON.readJSON r.body of
+        Left _ -> case JSON.readJSON r.body of
           Right (r :: Errors) -> pure (Left r)
           Left e -> throwError $ error $ "Can't parse JSON. " <> show e
 

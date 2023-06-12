@@ -31,7 +31,7 @@ This app uses idiomatic Deku patterns, including:
 - [Hooks](./wiki/hooks.md)
 - [Classic programming patterns](./wiki/functional-programming.md)
 
-For more information on how to use Deku, check out the [deku documentation](https://mikesol.github.io/purescript-deku). There's also an article called [Horizontal and Vertical Events](https://dev.to/mikesol/horizontal-and-vertical-events-1pm1) that explores some of the framework's design decisions.
+For more information on how to use Deku, check out the [deku documentation](https://purescript-deku.netlify.app/) (see also [old documentation](https://mikesol.github.io/purescript-deku)). There's also an article called [Horizontal and Vertical Events](https://dev.to/mikesol/horizontal-and-vertical-events-1pm1) that explores some of the framework's design decisions.
 
 # Getting started
 

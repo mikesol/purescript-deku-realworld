@@ -35,7 +35,7 @@ app = Deku.do
   template ~~
     { h1Atts: oneOf
         [ color <#> \c -> D.Style := "color:" <> c <> ";"
-        , pure $ D.Id := "my-h1"
+        , id_ := "my-h1"
         ]
     , counterTxt: nut (D.span_ [ text (fold (const (add 1)) counter (-1) <#> show) ])
     , button1: oneOf

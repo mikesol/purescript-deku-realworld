@@ -8,18 +8,17 @@ import Components.Field (largePasswordField, largeTextField)
 import Control.Alt ((<|>))
 import Data.Array (intercalate)
 import Data.Either (Either(..))
-import Data.Foldable (oneOf)
 import Data.Maybe (Maybe(..), maybe)
 import Data.Tuple.Nested ((/\))
 import Data.Validation.Semigroup (V, invalid, toEither)
-import Deku.Attribute ((:=))
-import Deku.Control (blank, switcher_, text_)
-import Deku.Core (Domable)
+import Deku.Attribute ((!:=))
+import Deku.Control (blank, text_, (<#~>))
+import Deku.Core (Nut, fixed)
 import Deku.DOM as D
-import Deku.Do (useState)
 import Deku.Do as Deku
+import Deku.Hooks (useState)
 import Deku.Listeners (click)
-import Deku.Pursx (nut, (~~))
+import Deku.Pursx ((~~))
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
@@ -43,27 +42,29 @@ login_ =
 
         </div>
     </div>
-</div>"""
+</div>
+"""
 
-login :: forall lock payload. (User -> Effect Unit) -> Domable lock payload
+login ::  (User -> Effect Unit) -> Nut
 login setCurrentUser = login_ ~~
-  { formMatter: nut
-      ( Deku.do
+  { formMatter: fixed
+      [ Deku.do
           setErrors /\ errors <- useState []
           setEmail /\ email <- useState Nothing
           setPassword /\ password <- useState Nothing
           let errorMessages = ((email <|> password <|> pure Nothing) $> []) <|> errors
           D.div_
-            [ errorMessages # switcher_ D.div case _ of
-                [] -> blank
-                errs -> D.ul (oneOf [ pure $ D.Class := "error-messages" ])
-                  (map (D.li_ <<< pure <<< text_) errs)
+            [ D.div_
+                [ errorMessages <#~> case _ of
+                    [] -> blank
+                    errs -> D.ul [ D.Class !:= "error-messages" ]
+                      (map (D.li_ <<< pure <<< text_) errs)
+                ]
             , D.div_
                 [ largeTextField "Email" (Just >>> setEmail)
                 , largePasswordField "Password" (Just >>> setPassword)
                 , D.button
-                    ( oneOf
-                        [ pure $ D.Class := "btn btn-lg btn-primary pull-xs-right"
+                        [ D.Class !:= "btn btn-lg btn-primary pull-xs-right"
                         , click $
                             ( { email: _, password: _ }
                                 <$> email
@@ -83,11 +84,10 @@ login setCurrentUser = login_ ~~
                                       setCurrentUser currentUser.user
                                       window >>= location >>= setHref "/#/"
                         ]
-                    )
                     [ text_ "Sign in" ]
                 ]
             ]
-      )
+      ]
   }
   where
   withErrors :: Array String -> Maybe String -> V (Array String) String

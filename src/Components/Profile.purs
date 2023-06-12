@@ -10,13 +10,14 @@ import Data.Maybe (maybe)
 import Data.Tuple.Nested ((/\))
 import Date (prettyDate)
 import Deku.Attribute ((:=))
-import Deku.Control (blank, switcher_, text, text_)
-import Deku.Core (Domable)
+import Deku.Control (blank, text, text_, (<#~>))
+import Deku.Core (Nut, fixed)
 import Deku.DOM as D
-import Deku.Do (useState)
+import Deku.Attributes (style_, klass_)
 import Deku.Do as Deku
+import Deku.Hooks (useState)
 import Deku.Listeners (click)
-import Deku.Pursx (nut, (~~))
+import Deku.Pursx ((~~))
 import FRP.Event (Event)
 import Type.Proxy (Proxy(..))
 
@@ -50,7 +51,7 @@ singleArticle_ =
     </a>
 </div>"""
 
-singleArticle :: forall lock payload. Event AuthState -> Article -> Domable lock payload
+singleArticle ::  Event AuthState -> Article -> Nut
 singleArticle
   currentUser
   { updatedAt
@@ -63,17 +64,17 @@ singleArticle
   } = Deku.do
   setFavoritesCount /\ favoritesCount <- useState fcount
   setFavorited /\ isFavorited <- useState favorited
-  let fc = nut (text (show <$> favoritesCount))
+  let fc = fixed [text (show <$> favoritesCount)]
   let
     signedOutButton = oneOf
-      [ pure $ D.Class := "text-success btn-sm pull-xs-right"
+      [ klass_  "text-success btn-sm pull-xs-right"
       , currentUser <#> \cu -> D.Style := case cu of
           SignedIn _ -> "display:none;"
           SignedOut -> ""
       ]
   let
     signedInButton = oneOf
-      [ pure $ D.Class := "btn btn-outline-primary btn-sm pull-xs-right"
+      [ klass_  "btn btn-outline-primary btn-sm pull-xs-right"
       , currentUser <#> \cu -> D.Style := case cu of
           SignedIn _ -> ""
           SignedOut -> "display:none;"
@@ -87,10 +88,10 @@ singleArticle
     , signedInButton
     , favoritesCount1: fc
     , favoritesCount2: fc
-    , name: nut (text_ username)
-    , date: nut (text_ (prettyDate updatedAt))
-    , title: nut (D.h1_ [ text_ title ])
-    , description: nut (D.p_ [ text_ description ])
+    , name: fixed [text_ username]
+    , date: fixed [text_ (prettyDate updatedAt)]
+    , title: fixed [D.h1_ [ text_ title ]]
+    , description: fixed [D.p_ [ text_ description ]]
     , toArticle
     }
   where
@@ -165,13 +166,13 @@ profileLoading_ =
                     </div>
 """
 
-profile :: forall lock payload. Event AuthState -> ProfileStatus -> Domable lock payload
+profile ::  Event AuthState -> ProfileStatus -> Nut
 profile e (ProfileLoaded a b c) = profileLoaded e a b c
 profile _ ProfileLoading = profileLoading_ ~~ {}
 
 data Tab = MyArticles | FavoritedArticles
 
-profileLoaded :: forall lock payload. Event AuthState -> SingleProfile -> MultipleArticles -> MultipleArticles -> Domable lock payload
+profileLoaded ::  Event AuthState -> SingleProfile -> MultipleArticles -> MultipleArticles -> Nut
 profileLoaded
   currentUser
   { profile:
@@ -189,30 +190,31 @@ profileLoaded
   setTab /\ tab <- useState MyArticles
   profile_ ~~
     { image1: pure (D.Src := image)
-    , name1: nut (D.h4_ [ text_ username ])
-    , bio1: nut (maybe blank (\b -> D.h4_ [ text_ b ]) bio)
-    , name2: nut (text_ username)
+    , name1: fixed [D.h4_ [ text_ username ]]
+    , bio1: fixed [maybe blank (\b -> D.h4_ [ text_ b ]) bio]
+    , name2: fixed [text_ username]
     , followAttrs: followAttrs'
     , followText: followText'
     , favoritedAttributes: oneOf
         [ tab <#> \ct -> D.Class := "nav-link" <> case ct of
             FavoritedArticles -> " active"
             MyArticles -> ""
-        , pure $ D.Style := "cursor: pointer;"
+        , style_ "cursor: pointer;"
         , click $ pure $ setTab FavoritedArticles
         ]
     , myAttributes: oneOf
         [ tab <#> \ct -> D.Class := "nav-link" <> case ct of
             FavoritedArticles -> ""
             MyArticles -> " active"
-        , pure $ D.Style := "cursor: pointer;"
+        , style_ "cursor: pointer;"
         , click $ pure $ setTab MyArticles
         ]
     , articleList:
         let
           su = singleArticle currentUser
         in
-          nut $ tab # switcher_ D.div case _ of
+          D.div_ [ tab <#~> case _ of
             FavoritedArticles -> D.div_ (map su favoritedArticles.articles)
             MyArticles -> D.div_ (map su myArticles.articles)
+            ]
     }
