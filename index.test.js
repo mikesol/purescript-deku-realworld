@@ -1,3 +1,5 @@
+const jestConfig = require("./jest.config");
+
 let server;
 describe("Conduit", () => {
 	beforeAll(async () => {
