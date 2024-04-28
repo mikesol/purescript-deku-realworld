@@ -6,31 +6,23 @@ import API.Types (AuthState, isSignedIn, isSignedOut)
 import Deku.Control (text_)
 import FRP.Poll (Poll)
 import Deku.DOM.Attributes as DA
-import Deku.Core (Nut, fixed)
+import Deku.Core (Nut)
 import Deku.DOM as D
 import Deku.DOM.Listeners as DL
-import Deku.Pursx (pursx)
 import Deku.DOM.Combinators (runOn_)
 import Effect (Effect)
 import FRP.Dedup (dedup)
 import Route (Route(..))
-
-type Nav =
-  """<nav class="navbar navbar-light">
-    <div class="container">
-        <a class="navbar-brand" href="/#/">conduit</a>
-        ~navbar~
-    </div>
-</nav>"""
 
 nav
   :: Effect Unit
   -> Poll Route
   -> Poll AuthState
   -> Nut
-nav logOut route currentUser = pursx @Nav
-  { navbar: fixed
-      [ D.ul [ DA.klass_ "nav navbar-nav pull-xs-right" ]
+nav logOut route currentUser = D.nav [ DA.klass_ "navbar navbar-light" ]
+  [ D.div [ DA.klass_ "container" ]
+      [ D.a [ DA.klass_ "navbar-brand", DA.href_ "/#/" ] [ text_ "conduit" ]
+      , D.ul [ DA.klass_ "nav navbar-nav pull-xs-right" ]
           [ navItem Home "/#/" "Home" "nav-home" (pure true)
           , navItem Editor "/#/editor" "Editor" "nav-editor" (isSignedIn <$> currentUser)
           , navItem Settings "/#/settings" "Settings" "nav-settings" (isSignedIn <$> currentUser)
@@ -49,7 +41,7 @@ nav logOut route currentUser = pursx @Nav
               ]
           ]
       ]
-  }
+  ]
   where
 
   doDisplay :: _ Boolean -> _

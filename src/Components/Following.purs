@@ -5,7 +5,7 @@ import Prelude
 import API.Effects (follow, unfollow)
 import API.Types (AuthState, isSignedIn, whenSignedIn)
 import Deku.Control (text)
-import Deku.Core (Nut, fixed)
+import Deku.Core (Nut)
 import Deku.DOM.Attributes as DA
 import Deku.DOM.Listeners (runOn)
 import Deku.DOM.Listeners as DL
@@ -20,7 +20,7 @@ followAttrs
   -> (Boolean -> Effect Unit)
   -> Array (Poll _)
 followAttrs username currentUser isFollowing setFollowing =
-  [ DA.klass_  "btn btn-sm btn-outline-secondary"
+  [ DA.klass_ "btn btn-sm btn-outline-secondary"
   , DA.style $ currentUser <#> \cu -> if isSignedIn cu then "" else "display:none;"
   , runOn DL.click $ ({ cu: _, flw: _ } <$> currentUser <*> isFollowing) <#> \{ cu, flw } -> do
       whenSignedIn cu \cu' -> do
@@ -32,5 +32,5 @@ followAttrs username currentUser isFollowing setFollowing =
             void $ follow cu'.token username
   ]
 
-followText ::  Poll Boolean -> Nut
-followText isFollowing = fixed [text (isFollowing <#> if _ then "Following" else "Follow")]
+followText :: Poll Boolean -> Nut
+followText isFollowing = text (isFollowing <#> if _ then "Following" else "Follow") 

@@ -4,7 +4,7 @@ import Prelude
 
 import Data.Filterable (filterMap)
 import Data.Maybe (Maybe(..))
-import FRP.Event (Event)
+import FRP.Poll (Poll)
 
 type User =
   { email :: String
@@ -111,7 +111,7 @@ maybeToAuthState :: Maybe User -> AuthState
 maybeToAuthState Nothing = SignedOut
 maybeToAuthState (Just user) = SignedIn user
 
-mostRecentCurrentUser :: Event AuthState -> Event User
+mostRecentCurrentUser :: Poll AuthState -> Poll User
 mostRecentCurrentUser = filterMap case _ of
   SignedIn user -> Just user
   SignedOut -> Nothing
