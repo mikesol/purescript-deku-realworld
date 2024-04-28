@@ -1,14 +1,11 @@
 module Components.Footer where
 
-
 import Deku.Core (Nut)
-import Deku.Pursx ((~~))
-import Type.Proxy (Proxy(..))
+import Deku.Pursx (pursx)
 
-footer_ =
-  Proxy
-    :: Proxy
-         """<footer>
+footer :: Nut
+footer = pursx
+  @"""<footer>
     <div class="container">
         <a href="/" class="logo-font">conduit</a>
         <span class="attribution">
@@ -17,6 +14,4 @@ footer_ =
     </div>
 </footer>
 """
-
-footer :: Nut
-footer = footer_ ~~ {}
+  {}

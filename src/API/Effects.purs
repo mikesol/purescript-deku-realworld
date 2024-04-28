@@ -14,7 +14,7 @@ import Data.MediaType.Common (applicationJSON)
 import Effect.Aff (Aff, error, throwError)
 import Foreign (Foreign)
 import Foreign.Object (Object)
-import Simple.JSON as JSON
+import Yoga.JSON as JSON
 
 simpleGetOrDelete' :: forall r. JSON.ReadForeign r => Method -> Array RequestHeader -> String -> Aff r
 simpleGetOrDelete' method headers url = do
@@ -124,7 +124,7 @@ unfavorite token slug = simpleDelete' [ RequestHeader "Authorization" ("Token " 
 comments :: String -> Aff MultipleComments
 comments slug = simpleGet ("https://api.realworld.io/api/articles/" <> slug <> "/comments")
 
-addComment :: String -> String -> String -> Aff (PostReturn { comment :: Comment})
+addComment :: String -> String -> String -> Aff (PostReturn { comment :: Comment })
 addComment token slug body = simplePost' [ RequestHeader "Authorization" ("Token " <> token) ] ("https://api.realworld.io/api/articles/" <> slug <> "/comments") { comment: { body } }
 
 deleteComment :: String -> String -> Int -> Aff Unit

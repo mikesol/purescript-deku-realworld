@@ -4,27 +4,25 @@ import Prelude
 
 import API.Effects (follow, unfollow)
 import API.Types (AuthState, isSignedIn, whenSignedIn)
-import Data.Foldable (oneOf)
-import Deku.Attribute (Attribute, (:=))
 import Deku.Control (text)
-import Deku.Core (Nut, fixed)
-import Deku.Attributes (klass_)
-import Deku.DOM as D
-import Deku.Listeners (click)
+import Deku.Core (Nut)
+import Deku.DOM.Attributes as DA
+import Deku.DOM.Listeners (runOn)
+import Deku.DOM.Listeners as DL
 import Effect (Effect)
 import Effect.Aff (launchAff_)
-import FRP.Event (Event)
+import FRP.Poll (Poll)
 
 followAttrs
   :: String
-  -> Event AuthState
-  -> Event Boolean
+  -> Poll AuthState
+  -> Poll Boolean
   -> (Boolean -> Effect Unit)
-  -> Event (Attribute D.Button_)
-followAttrs username currentUser isFollowing setFollowing = oneOf
-  [ klass_  "btn btn-sm btn-outline-secondary"
-  , currentUser <#> \cu -> D.Style := if isSignedIn cu then "" else "display:none;"
-  , click $ ({ cu: _, flw: _ } <$> currentUser <*> isFollowing) <#> \{ cu, flw } -> do
+  -> Array (Poll _)
+followAttrs username currentUser isFollowing setFollowing =
+  [ DA.klass_ "btn btn-sm btn-outline-secondary"
+  , DA.style $ currentUser <#> \cu -> if isSignedIn cu then "" else "display:none;"
+  , runOn DL.click $ ({ cu: _, flw: _ } <$> currentUser <*> isFollowing) <#> \{ cu, flw } -> do
       whenSignedIn cu \cu' -> do
         setFollowing (not flw)
         launchAff_ do
@@ -34,5 +32,5 @@ followAttrs username currentUser isFollowing setFollowing = oneOf
             void $ follow cu'.token username
   ]
 
-followText ::  Event Boolean -> Nut
-followText isFollowing = fixed [text (isFollowing <#> if _ then "Following" else "Follow")]
+followText :: Poll Boolean -> Nut
+followText isFollowing = text (isFollowing <#> if _ then "Following" else "Follow") 

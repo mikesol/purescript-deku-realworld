@@ -3,40 +3,41 @@ module Components.Field where
 import Prelude
 
 import Control.Plus (empty)
-import Deku.Attribute ((!:=), (<:=>))
 import Deku.Core (Nut)
 import Deku.DOM as D
-import Deku.Listeners (textInput)
+import Deku.DOM.Attributes as DA
+import Deku.DOM.Listeners (valueOn_)
+import Deku.DOM.Listeners as DL
 import Effect (Effect)
-import FRP.Event (Event)
+import FRP.Poll (Poll)
 
 fieldset
   :: Boolean
   -> Boolean
-  -> Event String
+  -> Poll String
   -> String
   -> (String -> Effect Unit)
   -> Nut
-fieldset isLg isPw value placeholder pusher = D.fieldset [ D.Class !:= "form-group" ]
+fieldset isLg isPw value placeholder pusher = D.fieldset [ DA.klass_ "form-group" ]
   [ D.input
-      [ D.Class !:= "form-control" <> (if isLg then " form-control-lg" else "")
-      , D.Xtype !:= if isPw then "password" else "text"
-      , D.Placeholder !:= placeholder
-      , D.Value <:=> value
-      , textInput (pure pusher)
+      [ DA.klass_ $ "form-control" <> (if isLg then " form-control-lg" else "")
+      , DA.xtype_ if isPw then "password" else "text"
+      , DA.placeholder_ placeholder
+      , DA.value value
+      , valueOn_ DL.input pusher
       ]
       []
   ]
 
 largeTextFieldWithValue
-  :: Event String
+  :: Poll String
   -> String
   -> (String -> Effect Unit)
   -> Nut
 largeTextFieldWithValue = fieldset true false
 
 textFieldWithValue
-  :: Event String
+  :: Poll String
   -> String
   -> (String -> Effect Unit)
   -> Nut
