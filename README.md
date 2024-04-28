@@ -12,16 +12,6 @@ We've gone to great lengths to adhere to the ****purescript-deku** community sty
 
 For more information on how to this works with other frontends/backends, head over to the [RealWorld](https://github.com/gothinkster/realworld) repo.
 
-
-# How it works
-
-Deku is a framework for building reactive apps using the PureScript language. It's very fast, boasting a [benchmark suite](https://github.com/mikesol/purescript-deku/blob/main/test/Performance/Snapshot/TodoTest.js) that's competitive with the fastest UI frameworks. Its goal is to combine together the speed of industry-leading frameworks with the power of a purely functional language. It is also fully interoperable with several other PureScript libraries including [`ocarina`](https://github.com/mikesol/purescript-ocarina) and [`rito`](https://github.com/mikesol/purescript-rito), which are used for WebAudio and WebGL respectively.
-
-Deku's speed is shown off in the following open-source applications:
-
-- [Verity Scheel's post on parsing](https://cofree.coffee/~verity/parser.html) implements a full-featured tweening engine to animate rule-based parsing steps.
-- [joyride.fm](https://joyride.fm) is a social rhythm game.
-
 ## More about Deku
 
 
