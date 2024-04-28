@@ -6,32 +6,29 @@ import API.Effects (logIn)
 import API.Types (User)
 import Components.Field (largePasswordField, largeTextField)
 import Control.Alt ((<|>))
+import Deku.DOM.Attributes as DA
+import Deku.Pursx (pursx)
 import Data.Array (intercalate)
 import Data.Either (Either(..))
+import Deku.DOM.Combinators (runOn)
+import Deku.DOM.Listeners as DL
 import Data.Maybe (Maybe(..), maybe)
 import Data.Tuple.Nested ((/\))
 import Data.Validation.Semigroup (V, invalid, toEither)
-import Deku.Attribute ((!:=))
-import Deku.Control (blank, text_, (<#~>))
+import Deku.Control (text_)
 import Deku.Core (Nut, fixed)
 import Deku.DOM as D
 import Deku.Do as Deku
-import Deku.Hooks (useState)
-import Deku.Listeners (click)
-import Deku.Pursx ((~~))
+import Deku.Hooks (useState, (<#~>))
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
 import Foreign.Object (toUnfoldable)
-import Type.Proxy (Proxy(..))
 import Web.HTML (window)
 import Web.HTML.Location (setHref)
 import Web.HTML.Window (location)
 
-login_ =
-  Proxy
-    :: Proxy
-         """<div class="auth-page">
+type Login = """<div class="auth-page">
     <div class="container page">
         <div class="row">
 
@@ -46,7 +43,7 @@ login_ =
 """
 
 login ::  (User -> Effect Unit) -> Nut
-login setCurrentUser = login_ ~~
+login setCurrentUser = pursx @Login
   { formMatter: fixed
       [ Deku.do
           setErrors /\ errors <- useState []
@@ -56,16 +53,16 @@ login setCurrentUser = login_ ~~
           D.div_
             [ D.div_
                 [ errorMessages <#~> case _ of
-                    [] -> blank
-                    errs -> D.ul [ D.Class !:= "error-messages" ]
+                    [] -> mempty
+                    errs -> D.ul [ DA.klass_  "error-messages" ]
                       (map (D.li_ <<< pure <<< text_) errs)
                 ]
             , D.div_
                 [ largeTextField "Email" (Just >>> setEmail)
                 , largePasswordField "Password" (Just >>> setPassword)
                 , D.button
-                        [ D.Class !:= "btn btn-lg btn-primary pull-xs-right"
-                        , click $
+                        [ DA.klass_  "btn btn-lg btn-primary pull-xs-right"
+                        , runOn DL.click $
                             ( { email: _, password: _ }
                                 <$> email
                                 <*> password

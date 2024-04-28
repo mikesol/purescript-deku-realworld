@@ -6,27 +6,26 @@ import API.Effects (getArticleFeed, getArticles, getArticlesWithTag)
 import API.Types (Article, AuthState(..), MultipleArticles)
 import Components.Favorited (doFavoriting)
 import Control.Alt ((<|>))
+import Deku.DOM.Combinators (runOn, runOn_)
 import Data.Foldable (oneOf)
 import Data.Tuple.Nested ((/\))
 import Date (prettyDate)
-import Deku.Attributes (style_, klass_)
-import Deku.Attribute ((:=), (!:=))
-import Deku.Control (blank, text, text_, (<#~>))
+import Deku.DOM.Attributes as DA
+import Deku.Control (text, text_)
+import Deku.Hooks ((<#~>), useState, useState')
 import Deku.Core (Nut, fixed)
 import Deku.DOM as D
 import Deku.Do as Deku
-import Deku.Hooks (useState, useState')
-import Deku.Listeners (click, click_)
-import Deku.Pursx ((~~))
+import Deku.DOM.Listeners as DL
+import Deku.Pursx (pursx)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
-import FRP.Event (Event)
-import Type.Proxy (Proxy(..))
+import FRP.Poll (Poll)
 
 data ArticleLoadStatus = ArticlesLoading | ArticlesLoaded MultipleArticles
 data TagsLoadStatus = TagsLoading | TagsLoaded { tags :: Array String }
 
-articlePreview :: Event AuthState -> Article -> Nut
+articlePreview :: Poll AuthState -> Article -> Nut
 articlePreview
   currentUser
   { updatedAt
@@ -42,26 +41,26 @@ articlePreview
   let fc = fixed [ text (show <$> favoritesCount) ]
   let
     signedOutButton = oneOf
-      [ klass_  "text-success btn-sm pull-xs-right"
-      , currentUser <#> \cu -> D.Style := case cu of
+      [ DA.klass_ "text-success btn-sm pull-xs-right"
+      , DA.style $ currentUser <#> \cu -> case cu of
           SignedIn _ -> "display:none;"
           SignedOut -> ""
       ]
   let
     signedInButton = oneOf
-      [ klass_  "btn btn-outline-primary btn-sm pull-xs-right"
-      , currentUser <#> \cu -> D.Style := case cu of
+      [ DA.klass_ "btn btn-outline-primary btn-sm pull-xs-right"
+      , DA.style $ currentUser <#> \cu -> case cu of
           SignedIn _ -> ""
           SignedOut -> "display:none;"
       , doFavoriting currentUser slug isFavorited favoritesCount setFavoritesCount setFavorited
       ]
-  articlePreview_ ~~
-    { image: pure (D.Src := image)
-    , profile1: pure (D.Href := "/#/profile/" <> username)
-    , profile2: pure (D.Href := "/#/profile/" <> username)
+  pursx @ArticlePreview
+    { image:  DA.src_ image
+    , profile1: DA.href_ $ "/#/profile/" <> username
+    , profile2:  DA.href_ $ "/#/profile/" <> username
     , signedOutButton
     , signedInButton
-    , href: pure (D.Href := "/#/article/" <> slug)
+    , href:  DA.href_ $ "/#/article/" <> slug
     , username: fixed [ text_ username ]
     , title: fixed [ D.h1_ [ text_ title ] ]
     , description: fixed [ D.p_ [ text_ description ] ]
@@ -70,19 +69,15 @@ articlePreview
     , favoritesCount2: fc
     }
 
-articlesLoading_ =
-  Proxy
-    :: Proxy
-         """
+type ArticlesLoading =
+  """
                 <div class="article-preview">
                         <h2>Loading...</h2>
                 </div>
 """
 
-articlePreview_ =
-  Proxy
-    :: Proxy
-         """
+type ArticlePreview =
+  """
                 <div class="article-preview">
                     <div class="article-meta">
                         <a ~profile1~ ><img ~image~ /></a>
@@ -105,10 +100,7 @@ articlePreview_ =
                 </div>
 """
 
-home_ =
-  Proxy
-    :: Proxy
-         """<div class="home-page">
+type Home = """<div class="home-page">
 
     <div class="banner">
         <div class="container">
@@ -152,11 +144,11 @@ home_ =
 
 data Tab = Global | Feed
 
-home :: Event AuthState -> Event ArticleLoadStatus -> Event TagsLoadStatus -> Nut
+home :: Poll AuthState -> Poll ArticleLoadStatus -> Poll TagsLoadStatus -> Nut
 home currentUser articleLoadStatus tagsLoadStatus = Deku.do
   setArticles /\ articles <- useState'
   setTab /\ tab <- useState Global
-  home_ ~~
+  pursx @Home
     { articlePreviews: fixed
         [ D.div_
             [ (articleLoadStatus <|> articles) <#~> case _ of
@@ -165,7 +157,7 @@ home currentUser articleLoadStatus tagsLoadStatus = Deku.do
             ]
         ]
     , feedAttributes: oneOf
-        [ { cu: _, ct: _ } <$> currentUser <*> tab <#> \{ cu, ct } -> D.Class := "nav-link"
+        [ DA.klass $ { cu: _, ct: _ } <$> currentUser <*> tab <#> \{ cu, ct } -> "nav-link"
             <>
               ( case cu of
                   SignedIn _ -> ""
@@ -176,10 +168,10 @@ home currentUser articleLoadStatus tagsLoadStatus = Deku.do
                   Feed -> " active"
                   Global -> ""
               )
-        , currentUser <#> \cu -> D.Style := case cu of
+        , DA.style $ currentUser <#> \cu -> case cu of
             SignedOut -> ""
             SignedIn _ -> "cursor: pointer;"
-        , click $ currentUser <#> case _ of
+        , runOn DL.click $ currentUser <#> case _ of
             SignedOut -> pure unit
             SignedIn cu -> setArticles ArticlesLoading *> launchAff_
               do
@@ -187,11 +179,11 @@ home currentUser articleLoadStatus tagsLoadStatus = Deku.do
                 getArticleFeed cu.token >>= liftEffect <<< setArticles <<< ArticlesLoaded
         ]
     , globalAttributes: oneOf
-        [ tab <#> \ct -> D.Class := "nav-link" <> case ct of
+        [ DA.klass $ tab <#> \ct -> "nav-link" <> case ct of
             Feed -> ""
             Global -> " active"
-        , style_ "cursor: pointer;"
-        , click $ pure $ setArticles ArticlesLoading *> launchAff_
+        , DA.style_ "cursor: pointer;"
+        , runOn_ DL.click $ setArticles ArticlesLoading *> launchAff_
             do
               liftEffect $ setTab Global
               getArticles >>= liftEffect <<< setArticles <<< ArticlesLoaded
@@ -199,13 +191,13 @@ home currentUser articleLoadStatus tagsLoadStatus = Deku.do
     , tags: fixed
         [ D.div_
             [ tagsLoadStatus <#~> case _ of
-                TagsLoading -> blank
-                TagsLoaded tags -> D.div [ klass_  "tag-list" ]
+                TagsLoading -> mempty
+                TagsLoaded tags -> D.div [ DA.klass_ "tag-list" ]
                   ( map
                       ( \tag -> D.a
-                          [ D.Class !:= "tag-pill tag-default"
-                          , D.Style !:= "cursor: pointer;"
-                          , click_ $ setArticles ArticlesLoading *> launchAff_
+                          [ DA.klass_ "tag-pill tag-default"
+                          , DA.style_ "cursor: pointer;"
+                          , runOn_ DL.click $ setArticles ArticlesLoading *> launchAff_
                               do
                                 getArticlesWithTag tag >>= liftEffect <<< setArticles <<< ArticlesLoaded
                           ]
@@ -219,4 +211,4 @@ home currentUser articleLoadStatus tagsLoadStatus = Deku.do
     }
   where
   loading :: Nut
-  loading = articlesLoading_ ~~ {}
+  loading = pursx @ArticlesLoading {}

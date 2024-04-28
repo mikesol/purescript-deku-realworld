@@ -3,22 +3,20 @@ module Components.Nav where
 import Prelude
 
 import API.Types (AuthState, isSignedIn, isSignedOut)
-import Deku.Attribute (Attribute, (:=), (!:=))
 import Deku.Control (text_)
+import FRP.Poll (Poll)
+import Deku.DOM.Attributes as DA
 import Deku.Core (Nut, fixed)
 import Deku.DOM as D
-import Deku.Listeners (click_)
-import Deku.Pursx ((~~))
+import Deku.DOM.Listeners as DL
+import Deku.Pursx (pursx)
+import Deku.DOM.Combinators (runOn_)
 import Effect (Effect)
 import FRP.Dedup (dedup)
-import FRP.Event (Event)
 import Route (Route(..))
-import Type.Proxy (Proxy(..))
 
-nav_ =
-  Proxy
-    :: Proxy
-         """<nav class="navbar navbar-light">
+type Nav =
+  """<nav class="navbar navbar-light">
     <div class="container">
         <a class="navbar-brand" href="/#/">conduit</a>
         ~navbar~
@@ -27,25 +25,25 @@ nav_ =
 
 nav
   :: Effect Unit
-  -> Event Route
-  -> Event AuthState
+  -> Poll Route
+  -> Poll AuthState
   -> Nut
-nav logOut route currentUser = nav_ ~~
+nav logOut route currentUser = pursx @Nav
   { navbar: fixed
-      [ D.ul [ D.Class !:= "nav navbar-nav pull-xs-right" ]
+      [ D.ul [ DA.klass_ "nav navbar-nav pull-xs-right" ]
           [ navItem Home "/#/" "Home" "nav-home" (pure true)
           , navItem Editor "/#/editor" "Editor" "nav-editor" (isSignedIn <$> currentUser)
           , navItem Settings "/#/settings" "Settings" "nav-settings" (isSignedIn <$> currentUser)
           , navItem LogIn "/#/login" "Sign in" "nav-sign-in" (isSignedOut <$> currentUser)
           , navItem Register "/#/register" "Sign up" "nav-sign-up" (isSignedOut <$> currentUser)
           , D.li
-              [ D.Class !:= "nav-item"
+              [ DA.klass_ "nav-item"
               , doDisplay (isSignedIn <$> currentUser)
               ]
               [ D.a
-                  [ D.Href !:= "/#/"
-                  , D.Class !:= "nav-link"
-                  , click_ logOut
+                  [ DA.href_ "/#/"
+                  , DA.klass_ "nav-link"
+                  , runOn_ DL.click logOut
                   ]
                   [ text_ "Log out" ]
               ]
@@ -54,21 +52,22 @@ nav logOut route currentUser = nav_ ~~
   }
   where
 
-  doDisplay :: Event Boolean -> Event (Attribute D.Li_)
-  doDisplay displayCondition = dedup displayCondition <#> ((if _ then "" else "display: none;") >>> (D.Style := _))
+  doDisplay :: _ Boolean -> _
+  doDisplay displayCondition = DA.style $ dedup displayCondition <#> (if _ then "" else "display: none;")
 
-  navItem :: Route -> String -> String -> String -> Event Boolean -> Nut
+  navItem :: Route -> String -> String -> String -> Poll Boolean -> Nut
   navItem myRoute href label id displayCondition = D.li
-    [ D.Class !:= "nav-item"
-    , D.Id !:= id
+    [ DA.klass_ "nav-item"
+    , DA.id_ id
     , doDisplay displayCondition
     ]
     [ D.a
-        [ D.Href !:= href
-        , dedup
-            ( map (eq myRoute >>> if _ then " active" else "")
-                (route)
-            ) <#> \r -> D.Class := "nav-link" <> r
+        [ DA.href_ href
+        , DA.klass $
+            dedup
+              ( map (eq myRoute >>> if _ then " active" else "")
+                  (route)
+              ) <#> \r -> "nav-link" <> r
         ]
         [ text_ label ]
     ]

@@ -3,6 +3,8 @@ module Components.Settings where
 import Prelude
 
 import API.Effects as Effects
+import Deku.DOM.Attributes as DA
+import Deku.DOM.Combinators (runOn)
 import API.Types (User)
 import Components.Field (passwordField, textFieldWithValue)
 import Control.Alt ((<|>))
@@ -11,28 +13,23 @@ import Data.Compactable (compact)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
-import Deku.Attribute ((!:=))
-import Deku.Control (blank, text_, (<#~>))
+import Deku.Control (text_)
 import Deku.Core (Nut, fixed)
 import Deku.DOM as D
 import Deku.Do as Deku
-import Deku.Hooks (useState)
-import Deku.Listeners (click)
-import Deku.Pursx ((~~))
+import Deku.Hooks (useState, (<#~>))
+import Deku.DOM.Listeners as DL
+import Deku.Pursx (pursx)
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
-import FRP.Event (Event)
+import FRP.Poll (Poll)
 import Foreign.Object (toUnfoldable)
-import Type.Proxy (Proxy(..))
 import Web.HTML (window)
 import Web.HTML.Location (setHref)
 import Web.HTML.Window (location)
 
-settings_ =
-  Proxy
-    :: Proxy
-         """<div class="settings-page">
+type Settings =  """<div class="settings-page">
     <div class="container page">
         <div class="row">
 
@@ -47,8 +44,8 @@ settings_ =
     </div>
 </div>"""
 
-settings :: Event User -> (User -> Effect Unit) -> Nut
-settings currentUser setCurrentUser = settings_ ~~
+settings :: Poll User -> (User -> Effect Unit) -> Nut
+settings currentUser setCurrentUser = pursx @Settings
   { formMatter: fixed
       [ Deku.do
           setErrors /\ errors <- useState []
@@ -63,8 +60,8 @@ settings currentUser setCurrentUser = settings_ ~~
           D.div_
             [ D.div_ $
                 [ errorMessages <#~> case _ of
-                    [] -> blank
-                    errs -> D.ul [ D.Class !:= "error-messages" ]
+                    [] -> mempty
+                    errs -> D.ul [ DA.klass_ "error-messages" ]
                       (map (D.li_ <<< pure <<< text_) errs)
                 ]
             , D.div_
@@ -74,8 +71,8 @@ settings currentUser setCurrentUser = settings_ ~~
                 , textFieldWithValue (onCurrentUser _.email) "Email" (Just >>> setEmail)
                 , passwordField "Password" (Just >>> setPassword)
                 , D.button
-                    [ D.Class !:= "btn btn-lg btn-primary pull-xs-right"
-                    , click $
+                    [ DA.klass_ "btn btn-lg btn-primary pull-xs-right"
+                    , runOn DL.click $
                         ( { currentUser: _, user: _ } <$> currentUser <*>
                             ( { email: _, password: _, username: _, image: _, bio: _ }
                                 <$> email

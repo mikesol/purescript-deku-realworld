@@ -4,29 +4,26 @@ import Prelude
 
 import API.Types (Article, AuthState(..), MultipleArticles, SingleProfile)
 import Components.Favorited (doFavoriting)
+import FRP.Poll (Poll)
 import Components.Following (followAttrs, followText)
 import Data.Foldable (oneOf)
 import Data.Maybe (maybe)
 import Data.Tuple.Nested ((/\))
 import Date (prettyDate)
-import Deku.Attribute ((:=))
-import Deku.Control (blank, text, text_, (<#~>))
+import Deku.Control (text, text_)
 import Deku.Core (Nut, fixed)
 import Deku.DOM as D
-import Deku.Attributes (style_, klass_)
+import Deku.DOM.Combinators (runOn_)
+import Deku.DOM.Attributes as DA
 import Deku.Do as Deku
-import Deku.Hooks (useState)
-import Deku.Listeners (click)
-import Deku.Pursx ((~~))
-import FRP.Event (Event)
-import Type.Proxy (Proxy(..))
+import Deku.Hooks (useState, (<#~>))
+import Deku.DOM.Listeners as DL
+import Deku.Pursx (pursx)
 
 data ProfileStatus = ProfileLoading | ProfileLoaded SingleProfile MultipleArticles MultipleArticles
 
-singleArticle_ =
-  Proxy
-    :: Proxy
-         """<div class="article-preview">
+type SingleArticle =
+  """<div class="article-preview">
     <div class="article-meta">
         <a ~author1~><img ~image~ /></a>
         <div class="info">
@@ -51,7 +48,7 @@ singleArticle_ =
     </a>
 </div>"""
 
-singleArticle ::  Event AuthState -> Article -> Nut
+singleArticle :: Poll AuthState -> Article -> Nut
 singleArticle
   currentUser
   { updatedAt
@@ -64,23 +61,23 @@ singleArticle
   } = Deku.do
   setFavoritesCount /\ favoritesCount <- useState fcount
   setFavorited /\ isFavorited <- useState favorited
-  let fc = fixed [text (show <$> favoritesCount)]
+  let fc = fixed [ text (show <$> favoritesCount) ]
   let
     signedOutButton = oneOf
-      [ klass_  "text-success btn-sm pull-xs-right"
-      , currentUser <#> \cu -> D.Style := case cu of
+      [ DA.klass_ "text-success btn-sm pull-xs-right"
+      , DA.style $ currentUser <#> \cu -> case cu of
           SignedIn _ -> "display:none;"
           SignedOut -> ""
       ]
   let
     signedInButton = oneOf
-      [ klass_  "btn btn-outline-primary btn-sm pull-xs-right"
-      , currentUser <#> \cu -> D.Style := case cu of
+      [ DA.klass_ "btn btn-outline-primary btn-sm pull-xs-right"
+      , DA.style $ currentUser <#> \cu -> case cu of
           SignedIn _ -> ""
           SignedOut -> "display:none;"
       , doFavoriting currentUser slug isFavorited favoritesCount setFavoritesCount setFavorited
       ]
-  singleArticle_ ~~
+  pursx @SingleArticle
     { author1: authorHref
     , author2: authorHref
     , image: authorImg
@@ -88,21 +85,19 @@ singleArticle
     , signedInButton
     , favoritesCount1: fc
     , favoritesCount2: fc
-    , name: fixed [text_ username]
-    , date: fixed [text_ (prettyDate updatedAt)]
-    , title: fixed [D.h1_ [ text_ title ]]
-    , description: fixed [D.p_ [ text_ description ]]
+    , name: fixed [ text_ username ]
+    , date: fixed [ text_ (prettyDate updatedAt) ]
+    , title: fixed [ D.h1_ [ text_ title ] ]
+    , description: fixed [ D.p_ [ text_ description ] ]
     , toArticle
     }
   where
-  authorHref = pure (D.Href := "/#/profile/" <> username)
-  authorImg = pure (D.Src := image)
-  toArticle = pure (D.Href := "/#/article/" <> slug)
+  authorHref = DA.href_ ("/#/profile/" <> username)
+  authorImg = DA.src_ image
+  toArticle = DA.href_ ("/#/article/" <> slug)
 
-profile_ =
-  Proxy
-    :: Proxy
-         """<div class="profile-page">
+type Profile =
+  """<div class="profile-page">
 
     <div class="user-info">
         <div class="container">
@@ -148,10 +143,8 @@ profile_ =
 </div>
 """
 
-profileLoading_ =
-  Proxy
-    :: Proxy
-         """<div class="profile-page">
+type ProfileLoading =
+  """<div class="profile-page">
 
     <div class="user-info">
         <div class="container">
@@ -166,13 +159,14 @@ profileLoading_ =
                     </div>
 """
 
-profile ::  Event AuthState -> ProfileStatus -> Nut
-profile e (ProfileLoaded a b c) = profileLoaded e a b c
-profile _ ProfileLoading = profileLoading_ ~~ {}
+profile :: Poll AuthState -> Poll ProfileStatus -> Nut
+profile e pstat = pstat <#~> case _ of
+  ProfileLoaded a b c -> profileLoaded e a b c
+  ProfileLoading -> pursx @ProfileLoading {}
 
 data Tab = MyArticles | FavoritedArticles
 
-profileLoaded ::  Event AuthState -> SingleProfile -> MultipleArticles -> MultipleArticles -> Nut
+profileLoaded :: Poll AuthState -> SingleProfile -> MultipleArticles -> MultipleArticles -> Nut
 profileLoaded
   currentUser
   { profile:
@@ -188,33 +182,36 @@ profileLoaded
   let followAttrs' = followAttrs username currentUser isFollowing setFollowing
   let followText' = followText isFollowing
   setTab /\ tab <- useState MyArticles
-  profile_ ~~
-    { image1: pure (D.Src := image)
-    , name1: fixed [D.h4_ [ text_ username ]]
-    , bio1: fixed [maybe blank (\b -> D.h4_ [ text_ b ]) bio]
-    , name2: fixed [text_ username]
-    , followAttrs: followAttrs'
+  pursx @Profile
+    { image1: oneOf [ DA.src_ image ]
+    , name1: fixed [ D.h4_ [ text_ username ] ]
+    , bio1: fixed [ maybe mempty (\b -> D.h4_ [ text_ b ]) bio ]
+    , name2: fixed [ text_ username ]
+    , followAttrs: oneOf followAttrs'
     , followText: followText'
-    , favoritedAttributes: oneOf
-        [ tab <#> \ct -> D.Class := "nav-link" <> case ct of
-            FavoritedArticles -> " active"
-            MyArticles -> ""
-        , style_ "cursor: pointer;"
-        , click $ pure $ setTab FavoritedArticles
-        ]
-    , myAttributes: oneOf
-        [ tab <#> \ct -> D.Class := "nav-link" <> case ct of
-            FavoritedArticles -> ""
-            MyArticles -> " active"
-        , style_ "cursor: pointer;"
-        , click $ pure $ setTab MyArticles
-        ]
+    , favoritedAttributes:
+        oneOf
+          [ DA.klass $ tab <#> \ct -> "nav-link" <> case ct of
+              FavoritedArticles -> " active"
+              MyArticles -> ""
+          , DA.style_ "cursor: pointer;"
+          , runOn_ DL.click (setTab FavoritedArticles)
+          ]
+    , myAttributes:
+        oneOf
+          [ DA.klass $ tab <#> \ct -> "nav-link" <> case ct of
+              FavoritedArticles -> ""
+              MyArticles -> " active"
+          , DA.style_ "cursor: pointer;"
+          , runOn_ DL.click (setTab MyArticles)
+          ]
     , articleList:
         let
           su = singleArticle currentUser
         in
-          D.div_ [ tab <#~> case _ of
-            FavoritedArticles -> D.div_ (map su favoritedArticles.articles)
-            MyArticles -> D.div_ (map su myArticles.articles)
+          D.div_
+            [ tab <#~> case _ of
+                FavoritedArticles -> D.div_ (map su favoritedArticles.articles)
+                MyArticles -> D.div_ (map su myArticles.articles)
             ]
     }

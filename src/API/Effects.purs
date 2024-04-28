@@ -14,7 +14,7 @@ import Data.MediaType.Common (applicationJSON)
 import Effect.Aff (Aff, error, throwError)
 import Foreign (Foreign)
 import Foreign.Object (Object)
-import Simple.JSON as JSON
+import Yoga.JSON as JSON
 
 simpleGetOrDelete' :: forall r. JSON.ReadForeign r => Method -> Array RequestHeader -> String -> Aff r
 simpleGetOrDelete' method headers url = do

@@ -22,19 +22,13 @@ Deku's speed is shown off in the following open-source applications:
 - [Verity Scheel's post on parsing](https://cofree.coffee/~verity/parser.html) implements a full-featured tweening engine to animate rule-based parsing steps.
 - [joyride.fm](https://joyride.fm) is a social rhythm game.
 
-## Deku RealWorld
+## More about Deku
 
-This app uses idiomatic Deku patterns, including:
 
-- [HTML templating](./wiki/templating.md)
-- [Reactive events](./wiki/events.md)
-- [Hooks](./wiki/hooks.md)
-- [Classic programming patterns](./wiki/functional-programming.md)
-
-For more information on how to use Deku, check out the [deku documentation](https://purescript-deku.netlify.app/) (see also [old documentation](https://mikesol.github.io/purescript-deku)). There's also an article called [Horizontal and Vertical Events](https://dev.to/mikesol/horizontal-and-vertical-events-1pm1) that explores some of the framework's design decisions.
+For more information on how to use Deku, check out the [deku documentation](https://purescript-deku.surge.sh/). There's also an article called [Horizontal and Vertical Events](https://dev.to/mikesol/horizontal-and-vertical-events-1pm1) that explores some of the framework's design decisions.
 
 # Getting started
 
 ```bash
-npm install && npm start
+pnpm i && pnpm start
 ```

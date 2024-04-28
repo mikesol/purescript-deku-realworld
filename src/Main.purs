@@ -2,15 +2,7 @@ module Main where
 
 import Prelude
 
-import API.Effects
-  ( comments
-  , getArticle
-  , getArticles
-  , getArticlesWithAuthor
-  , getArticlesWithFavorited
-  , getProfile
-  , getTags
-  )
+import API.Effects (comments, getArticle, getArticles, getArticlesWithAuthor, getArticlesWithFavorited, getProfile, getTags)
 import API.Types (AuthState(..), maybeToAuthState, mostRecentCurrentUser)
 import Components.Article (ArticleStatus(..), article)
 import Components.Create (create)
@@ -23,34 +15,67 @@ import Components.Register (register)
 import Components.Settings (settings)
 import Control.Alt ((<|>))
 import Data.Maybe (Maybe(..))
-import Data.Tuple (curry, snd)
+import Data.Tuple (Tuple(..), curry, snd)
 import Data.Tuple.Nested ((/\))
-import Deku.Control ((<#~>), (<$~>))
 import Deku.Core (fixed)
 import Deku.DOM as D
+import Deku.Hooks (cycle)
 import Deku.Toplevel (runInBody)
 import Effect (Effect)
-import FRP.AffToEvent (affToEvent)
-import FRP.Event (burning)
+import Effect.Aff (killFiber, launchAff)
+import Effect.Exception (error)
+import Effect.Ref as Ref
 import FRP.Event as Event
+import FRP.Poll as Poll
 import Route (route, Route(..))
 import Routing.Duplex (parse)
 import Routing.Hash (matchesWith)
-import Simple.JSON as JSON
 import Web.HTML (window)
 import Web.HTML.Window (localStorage)
 import Web.Storage.Storage (getItem, removeItem, setItem)
+import Yoga.JSON as JSON
 
 -- data Page = Home | Login | Profile | Settings | Footer | Create | Nav | Article
 
 main :: Effect Unit
 main = do
-  storedUser <- ((_ >>= JSON.readJSON_) >>> maybeToAuthState) <$> (window >>= localStorage >>= getItem "session")
-  routeEvent <- Event.create >>= \{ event, push } ->
-    matchesWith (parse route) (curry push)
-      *> map _.event (burning (Nothing /\ Home) event)
-  currentUser <- Event.create >>= \{ event, push } -> do
-    burning storedUser event <#> _.event >>> { push, event: _ }
+  routeEvent <- Poll.create
+  currentUser <- Poll.create
+  prevAction <- Ref.new (pure unit)
+  matchesWith (parse route) \(_ /\ r) -> do
+    storedUser <- ((_ >>= JSON.readJSON_) >>> maybeToAuthState) <$> (window >>= localStorage >>= getItem "session")
+    pa <- Ref.read prevAction
+    newAction <- launchAff do
+      killFiber (error "no fiber for you") pa
+      let currentUserPoll = pure storedUser <|> currentUser.event
+      pure Tuple r <$> case r of
+        Home -> home currentUserPoll
+          (pure ArticlesLoading <|> (ArticlesLoaded <$> affToEvent getArticles))
+          (pure TagsLoading <|> TagsLoaded <$> affToEvent getTags)
+        Article slug -> D.div_
+          [ article currentUserPoll
+              ( pure ArticleLoading <|>
+                  ( ArticleLoaded
+                      <$> affToEvent (getArticle slug)
+                      <*> affToEvent (_.comments <$> comments slug)
+                  )
+              )
+          ]
+        Settings -> settings mostRecentUser setUser
+        Editor -> create mostRecentUser
+        LogIn -> login setUser
+        Register -> register setUser
+        Profile username -> D.div_
+          [ profile currentUserPoll
+              ( pure ProfileLoading <|>
+                  ( ProfileLoaded
+                      <$> affToEvent (getProfile username)
+                      <*> affToEvent (getArticlesWithAuthor username)
+                      <*> affToEvent (getArticlesWithFavorited username)
+                  )
+              )
+          ]
+    Ref.write newAction prevAction
   let
     logOut = do
       window >>= localStorage >>= removeItem "session"
@@ -58,40 +83,12 @@ main = do
     setUser cu = do
       window >>= localStorage >>= setItem "session" (JSON.writeJSON cu)
       currentUser.push (SignedIn cu)
-    mostRecentUser = mostRecentCurrentUser currentUser.event
+    mostRecentUser = mostRecentCurrentUser currentUserPoll
   runInBody
     ( fixed
-        [ nav logOut (map snd routeEvent) currentUser.event
-        , D.div_
-            [ ( routeEvent <#~> case _ of
-                  _ /\ Home -> home currentUser.event
-                    (pure ArticlesLoading <|> (ArticlesLoaded <$> affToEvent getArticles))
-                    (pure TagsLoading <|> TagsLoaded <$> affToEvent getTags)
-                  _ /\ Article slug -> D.div_
-                    [ (article currentUser.event) <$~>
-                        ( pure ArticleLoading <|>
-                            ( ArticleLoaded
-                                <$> affToEvent (getArticle slug)
-                                <*> affToEvent (_.comments <$> comments slug)
-                            )
-                        )
-                    ]
-                  _ /\ Settings -> settings mostRecentUser setUser
-                  _ /\ Editor -> create mostRecentUser
-                  _ /\ LogIn -> login setUser
-                  _ /\ Register -> register setUser
-                  _ /\ Profile username -> D.div_
-                    [ (profile currentUser.event) <$~>
-                        ( pure ProfileLoading <|>
-                            ( ProfileLoaded
-                                <$> affToEvent (getProfile username)
-                                <*> affToEvent (getArticlesWithAuthor username)
-                                <*> affToEvent (getArticlesWithFavorited username)
-                            )
-                        )
-                    ]
-              )
-            ]
+        [ nav logOut (fst <$> routeEvent) currentUserPoll
+        , D.div_ [ cycle (snd <$> routeEvent) ]
         , footer
         ]
     )
+  routeEvent.push Home
